@@ -106,6 +106,10 @@ jobs:
           URL=$(echo "$OUTPUT" | grep -o 'https://[^ ]*\.pages\.dev' | tail -1)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
+      - name: Seed Staging DB
+        run: |
+          curl -sf -X POST "${{ steps.staging-deploy.outputs.url }}/api/seed"
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
@@ -119,3 +123,8 @@ jobs:
 
       - name: Deploy to Production
         run: pnpm exec wrangler pages deploy dist --project-name iglympics --branch main --commit-dirty=true
+    
+      - name: Seed prod DB
+        run: |
+          PROD_URL=iglympics.just.wallage.nl
+          curl -sf -X POST "${PROD_URL}/api/seed"
