@@ -11,7 +11,7 @@ Iglympics is a competition dashboard for tracking game scores and player ratings
 - **Frontend**: React 19, Vite, Tailwind CSS v4, Shadcn UI, React Router
 - **Backend**: Cloudflare Pages Functions (serverless API)
 - **Database**: Cloudflare D1 (SQLite-compatible, Staging + Production)
-- **Realtime**: Cloudflare Durable Objects with WebSockets
+- **Realtime**: Cloudflare Durable Objects with WebSockets (separate Worker)
 - **IaC**: Terraform (state in R2 bucket) managing D1, Pages Project, Custom Domains
 - **CI/CD**: GitHub Actions — Trunk-Based Development
 - **E2E Testing**: Playwright
@@ -38,9 +38,10 @@ Iglympics is a competition dashboard for tracking game scores and player ratings
 ## Key Directories
 
 - `src/` — React frontend code
-- `worker/` — Cloudflare Worker entry point (Hono router + DO export)
-- `worker/lib/` — Shared backend utilities (auth, crypto)
-- `worker/do/` — Durable Object implementation
+- `functions/` — Cloudflare Pages Functions (file-based API routes)
+- `functions/_middleware.ts` — Auth middleware
+- `functions/_lib/` — Shared backend utilities (auth, crypto)
+- `worker/do/` — Durable Object Worker (separate deployment)
 - `migrations/` — D1 SQL migration files
 - `iac/` — Terraform infrastructure definitions
 - `e2e/` — Playwright E2E tests

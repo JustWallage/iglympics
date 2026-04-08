@@ -99,13 +99,20 @@ jobs:
         run: pnpm exec wrangler d1 migrations apply DB --remote --env preview
 
       - name: Deploy to Staging
-        run: pnpm exec wrangler pages deploy dist --project-name iglympics --branch staging --commit-dirty=true
+        id: staging-deploy
+        run: |
+          OUTPUT=$(pnpm exec wrangler pages deploy dist --project-name iglympics --branch staging --commit-dirty=true 2>&1)
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | grep -o 'https://[^ ]*\.pages\.dev' | tail -1)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run E2E tests against Staging
         run: pnpm exec playwright test
+        env:
+          E2E_BASE_URL: ${{ steps.staging-deploy.outputs.url }}
 
       - name: Run Production DB Migrations
         run: pnpm exec wrangler d1 migrations apply DB --remote --env production
