@@ -41,11 +41,17 @@ provider "cloudflare" {
 resource "cloudflare_d1_database" "staging" {
   account_id = var.cloudflare_account_id
   name       = "iglympics-staging"
+  read_replication = {
+    mode = "disabled"
+  }
 }
 
 resource "cloudflare_d1_database" "prod" {
   account_id = var.cloudflare_account_id
   name       = "iglympics-prod"
+  read_replication = {
+    mode = "disabled"
+  }
 }
 
 # ─── Pages Project ───────────────────────────────────────────────────────────
