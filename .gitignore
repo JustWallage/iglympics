@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.wrangler/
+wrangler.toml
+.dev.vars
+*.local
+.env
+test-results/
+playwright-report/
+iac/.terraform/
+iac/.terraform.lock.hcl
+iac/terraform.tfstate*
