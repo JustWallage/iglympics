@@ -82,7 +82,7 @@ jobs:
           secrets=(JWT_SECRET ADMIN_EMAIL)
           for name in "${secrets[@]}"; do
             for env in preview production; do
-              printf '%s' "${!name}" | pnpm exec wrangler secret put "$name" --env "$env"
+              printf '%s' "${!name}" | pnpm exec wrangler pages secret put "$name" --project-name iglympics --env "$env"
             done
           done
         env:
@@ -92,11 +92,14 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Deploy DO Worker
+        run: pnpm exec wrangler deploy -c wrangler.do.toml
+
       - name: Run Staging DB Migrations
         run: pnpm exec wrangler d1 migrations apply DB --remote --env preview
 
       - name: Deploy to Staging
-        run: pnpm exec wrangler deploy --env preview
+        run: pnpm exec wrangler pages deploy dist --project-name iglympics --branch staging --commit-dirty=true
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
@@ -108,4 +111,4 @@ jobs:
         run: pnpm exec wrangler d1 migrations apply DB --remote --env production
 
       - name: Deploy to Production
-        run: pnpm exec wrangler deploy --env production
+        run: pnpm exec wrangler pages deploy dist --project-name iglympics --branch main --commit-dirty=true

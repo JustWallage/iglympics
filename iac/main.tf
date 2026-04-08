@@ -48,15 +48,24 @@ resource "cloudflare_d1_database" "prod" {
   name       = "iglympics-prod"
 }
 
-# ─── Custom Domain ───────────────────────────────────────────────────────────
-# The Worker is deployed by wrangler; Terraform manages the custom domain.
-# Assumes external DNS (e.g. Route53) points iglympics.just.wallage.nl here.
+# ─── Pages Project ───────────────────────────────────────────────────────────
 
-resource "cloudflare_workers_domain" "iglympics" {
-  account_id  = var.cloudflare_account_id
-  hostname    = "iglympics.just.wallage.nl"
-  service     = "iglympics"
-  environment = "production"
+resource "cloudflare_pages_project" "iglympics" {
+  account_id        = var.cloudflare_account_id
+  name              = "iglympics"
+  production_branch = "main"
+
+  lifecycle {
+    ignore_changes = [deployment_configs]
+  }
+}
+
+# ─── Custom Domain ───────────────────────────────────────────────────────────
+
+resource "cloudflare_pages_domain" "iglympics_domain" {
+  account_id   = var.cloudflare_account_id
+  project_name = cloudflare_pages_project.iglympics.name
+  name         = "iglympics.just.wallage.nl"
 }
 
 # ─── Outputs ─────────────────────────────────────────────────────────────────

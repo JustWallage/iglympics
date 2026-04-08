@@ -1,19 +1,17 @@
 name = "iglympics"
 compatibility_date = "2025-01-01"
-main = "worker/index.ts"
+pages_build_output_dir = "dist"
 
-[assets]
-directory = "dist"
-binding = "ASSETS"
-not_found_handling = "single-page-application"
+# ─── D1 Bindings ─────────────────────────────────────────────────────────────
 
-# Local dev D1
+# Default (local dev)
 [[d1_databases]]
 binding = "DB"
 database_name = "iglympics-local"
 database_id = "local"
 migrations_dir = "migrations"
 
+# Staging (preview)
 [env.preview]
 name = "iglympics-staging"
 
@@ -23,6 +21,7 @@ database_name = "iglympics-staging"
 database_id = "STAGING_DB_ID"
 migrations_dir = "migrations"
 
+# Production
 [env.production]
 name = "iglympics-production"
 
@@ -32,10 +31,9 @@ database_name = "iglympics-prod"
 database_id = "PROD_DB_ID"
 migrations_dir = "migrations"
 
+# ─── Durable Object (external Worker binding) ───────────────────────────────
+
 [[durable_objects.bindings]]
 name = "SCOREBOARD_DO"
 class_name = "ScoreboardDO"
-
-[[migrations]]
-tag = "v1"
-new_classes = ["ScoreboardDO"]
+script_name = "iglympics-do"

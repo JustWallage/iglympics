@@ -21,6 +21,6 @@
     },
     "types": ["vite/client", "@cloudflare/workers-types"]
   },
-  "include": ["src", "worker", "env.d.ts"],
+  "include": ["src", "worker", "functions", "env.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.8.0",
   "scripts": {
     "dev": "vite",
-    "dev:pages": "wrangler d1 migrations apply iglympics-local --local && pnpm build && wrangler dev --port 8788",
+    "dev:pages": "wrangler d1 migrations apply iglympics-local --local && wrangler pages dev --proxy 5173",
     "migrate:local": "echo y | wrangler d1 migrations apply iglympics-local --local",
     "build": "tsc && vite build",
     "check:ts": "tsc --noEmit",
@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
-    "hono": "^4.12.12",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.5.0",
