@@ -4,13 +4,13 @@ test.describe("Login", () => {
   test("should show login page", async ({ page }) => {
     await page.goto("/login");
     await expect(page.locator("h1")).toHaveText("Iglympics");
-    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.locator('input[type="text"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
   });
 
   test("should login with valid credentials", async ({ page }) => {
     await page.goto("/login");
-    await page.fill('input[type="email"]', "alice@iglympics.nl");
+    await page.fill('input[type="text"]', "alice");
     await page.fill('input[type="password"]', "iglympics2024");
     await page.click('button[type="submit"]');
 
@@ -20,7 +20,7 @@ test.describe("Login", () => {
 
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto("/login");
-    await page.fill('input[type="email"]', "alice@iglympics.nl");
+    await page.fill('input[type="text"]', "alice");
     await page.fill('input[type="password"]', "wrongpassword");
     await page.click('button[type="submit"]');
 

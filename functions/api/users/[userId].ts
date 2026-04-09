@@ -1,6 +1,5 @@
 interface UserData {
   id: number;
-  email: string;
   name: string;
 }
 
@@ -12,10 +11,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   const currentUser = (context.data as { user: UserData }).user;
 
-  const user = await context.env.DB.prepare(
-    `
+  const user = await context.env.DB.prepare(`
     SELECT 
-      u.id, u.name, u.email,
+      u.id, u.name,
       COALESCE(SUM(mp.points_earned), 0) as points,
       COALESCE(SUM(CASE WHEN mp.outcome = 'win' THEN 1 ELSE 0 END), 0) as wins,
       COALESCE(SUM(CASE WHEN mp.outcome = 'loss' THEN 1 ELSE 0 END), 0) as losses,
@@ -27,8 +25,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     LEFT JOIN ratings r ON r.rated_id = u.id
     WHERE u.id = ?
     GROUP BY u.id
-  `,
-  )
+  `)
     .bind(userId)
     .first();
 
@@ -42,16 +39,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     .bind(currentUser.id, userId)
     .first<{ rating: number }>();
 
-  const matches = await context.env.DB.prepare(
-    `
+  const matches = await context.env.DB.prepare(`
     SELECT m.id, m.game_name, m.played_at, mp.outcome, mp.points_earned
     FROM match_participants mp
     JOIN matches m ON m.id = mp.match_id
     WHERE mp.user_id = ?
     ORDER BY m.played_at DESC
     LIMIT 50
-  `,
-  )
+  `)
     .bind(userId)
     .all();
 

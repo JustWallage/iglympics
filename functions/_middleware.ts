@@ -2,7 +2,6 @@ import { verifyJWT } from "./_lib/auth";
 
 interface JWTPayload {
   userId: number;
-  email: string;
   name: string;
 }
 
@@ -42,7 +41,6 @@ export const onRequest: PagesFunction<Env>[] = [
       ...context.data,
       user: {
         id: payload.userId,
-        email: payload.email,
         name: payload.name,
       },
     };

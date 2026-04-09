@@ -1,6 +1,5 @@
 interface UserData {
   id: number;
-  email: string;
   name: string;
 }
 
@@ -14,7 +13,7 @@ interface MatchInput {
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const currentUser = (context.data as { user: UserData }).user;
 
-  if (currentUser.email !== context.env.ADMIN_EMAIL) {
+  if (currentUser.name !== context.env.ADMIN_NAME) {
     return Response.json({ error: "Forbidden: admin only" }, { status: 403 });
   }
 
@@ -72,7 +71,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   await context.env.DB.batch(stmts);
 
-  // Notify Durable Object
   const doId = context.env.SCOREBOARD_DO.idFromName("global");
   const doStub = context.env.SCOREBOARD_DO.get(doId);
   await doStub.fetch("https://do/broadcast", {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -15,7 +15,7 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(name, password);
       navigate("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -36,19 +36,19 @@ export default function Login() {
           )}
           <div>
             <label
-              htmlFor="email"
+              htmlFor="name"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Email
+              Name
             </label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               required
               className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="you@example.com"
+              placeholder="Your name"
             />
           </div>
           <div>

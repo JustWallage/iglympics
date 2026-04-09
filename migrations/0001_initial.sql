@@ -1,8 +1,7 @@
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
   created_at TEXT DEFAULT (datetime('now'))
@@ -50,18 +49,18 @@ CREATE INDEX IF NOT EXISTS idx_ratings_rater_rated ON ratings(rater_id, rated_id
 -- Hash generated via PBKDF2 with WebCrypto - these are placeholder hashes that
 -- will be replaced by the seed script. For local dev, use the /api/seed endpoint.
 -- ═══════════════════════════════════════════════════════════════════════════════
-INSERT INTO users (name, email, password_hash, salt) VALUES
-  ('Alice Johnson', 'alice@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Bob Smith', 'bob@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Charlie Brown', 'charlie@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Diana Prince', 'diana@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Edward Norton', 'edward@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Fiona Apple', 'fiona@iglympics.nl', 'placeholder', 'placeholder'),
-  ('George Lucas', 'george@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Hannah Montana', 'hannah@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Ivan Drago', 'ivan@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Julia Roberts', 'julia@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Kevin Hart', 'kevin@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Laura Croft', 'laura@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Mike Tyson', 'mike@iglympics.nl', 'placeholder', 'placeholder'),
-  ('Nina Simone', 'nina@iglympics.nl', 'placeholder', 'placeholder');
+INSERT INTO users (name, password_hash, salt) VALUES
+  ('just', 'placeholder', 'placeholder'),
+  ('alice', 'placeholder', 'placeholder'),
+  ('bob', 'placeholder', 'placeholder'),
+  ('charlie', 'placeholder', 'placeholder'),
+  ('diana', 'placeholder', 'placeholder'),
+  ('edward', 'placeholder', 'placeholder'),
+  ('fiona', 'placeholder', 'placeholder'),
+  ('george', 'placeholder', 'placeholder'),
+  ('hannah', 'placeholder', 'placeholder'),
+  ('ivan', 'placeholder', 'placeholder'),
+  ('julia', 'placeholder', 'placeholder'),
+  ('kevin', 'placeholder', 'placeholder'),
+  ('laura', 'placeholder', 'placeholder'),
+  ('mike', 'placeholder', 'placeholder');

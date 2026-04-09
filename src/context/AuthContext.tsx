@@ -9,13 +9,12 @@ import {
 interface User {
   id: number;
   name: string;
-  email: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (name: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -56,11 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchMe();
   }, [fetchMe]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (name: string, password: string) => {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ name, password }),
     });
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };

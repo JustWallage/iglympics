@@ -1,0 +1,1 @@
+Instead of email use name for the users, admin email should become admin name as well.

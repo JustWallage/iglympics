@@ -6,7 +6,6 @@ import { useWebSocket } from "../context/WebSocketContext";
 interface UserProfile {
   id: number;
   name: string;
-  email: string;
   points: number;
   wins: number;
   losses: number;
@@ -90,7 +89,6 @@ export default function Profile() {
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold">{profile.name}</h1>
-        <p className="text-gray-500 text-sm">{profile.email}</p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
           <div className="text-center">

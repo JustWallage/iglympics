@@ -49,7 +49,7 @@ Iglympics is a competition dashboard for tracking game scores and player ratings
 
 ## Authentication
 
-Custom JWT-based auth with D1-stored users. Passwords hashed via WebCrypto API (PBKDF2). Admin determined by `ADMIN_EMAIL` env var.
+Custom JWT-based auth with D1-stored users. Passwords hashed via WebCrypto API (PBKDF2). Admin determined by `ADMIN_NAME` env var.
 
 ## Deployment Pipeline
 
@@ -62,14 +62,14 @@ Custom JWT-based auth with D1-stored users. Passwords hashed via WebCrypto API (
 - All API routes under `/api/*`
 - Auth via HttpOnly JWT cookie
 - JSON request/response bodies
-- Admin routes check JWT email against `ADMIN_EMAIL`
+- Admin routes check JWT name against `ADMIN_NAME`
 
 ## Environment Bindings
 
 - `DB` — D1 database binding
 - `SCOREBOARD_DO` — Durable Object namespace binding
 - `JWT_SECRET` — Secret for signing JWTs
-- `ADMIN_EMAIL` — Email of the admin user
+- `ADMIN_NAME` — Name of the admin user
 
 Your goal is to get enough context from the user before implementation, nothing can be still unclear. If anything is unclear or yet undecided you must use the `askQuestions` tool to confirm the missing pieces.
 
