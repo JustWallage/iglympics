@@ -47,6 +47,8 @@ export async function createJWT(
   payload: Record<string, unknown>,
   secret: string,
 ): Promise<string> {
+  if (!secret) throw new Error("JWT_SECRET is not configured");
+
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const body = { ...payload, iat: now, exp: now + 86400 }; // 24h
