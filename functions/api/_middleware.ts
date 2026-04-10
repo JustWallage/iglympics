@@ -1,4 +1,4 @@
-import { verifyJWT } from "./_lib/auth";
+import { verifyJWT } from "../_lib/auth";
 
 interface JWTPayload {
   userId: number;
@@ -11,10 +11,7 @@ export const onRequest: PagesFunction<Env>[] = [
   async (context) => {
     const url = new URL(context.request.url);
 
-    if (
-      !url.pathname.startsWith("/api/") ||
-      PUBLIC_PATHS.includes(url.pathname)
-    ) {
+    if (PUBLIC_PATHS.includes(url.pathname)) {
       return context.next();
     }
 

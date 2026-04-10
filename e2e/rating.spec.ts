@@ -1,8 +1,8 @@
 import { test, expect, Page } from "@playwright/test";
 
-async function loginAsAlice(page: Page) {
+async function loginAsJust(page: Page) {
   await page.goto("/login");
-  await page.fill('input[type="text"]', "alice");
+  await page.fill('input[type="text"]', "just");
   await page.fill('input[type="password"]', "iglympics2024");
   await page.click('button[type="submit"]');
   await expect(page.locator("h1")).toHaveText("Scoreboard");
@@ -10,9 +10,9 @@ async function loginAsAlice(page: Page) {
 
 test.describe("Rating", () => {
   test("should rate another user from their profile", async ({ page }) => {
-    await loginAsAlice(page);
+    await loginAsJust(page);
 
-    // Navigate to bob's profile (user 3)
+    // Navigate to bob's profile
     await page.click('a:has-text("bob")');
     await expect(page.locator("h1")).toHaveText("bob");
 

@@ -1,14 +1,18 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const isCI = !!process.env.CI;
+const baseURL = isCI ? process.env.E2E_BASE_URL : "http://localhost:5173";
+if (!baseURL) throw new Error("E2E_BASE_URL must be set in CI environment");
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  workers: isCI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: process.env.E2E_BASE_URL || "http://localhost:8788",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [

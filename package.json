@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.8.0",
   "scripts": {
     "dev": "vite",
-    "dev:pages": "wrangler d1 migrations apply iglympics-local --local && wrangler pages dev --proxy 5173",
+    "dev:pages": "wrangler d1 migrations apply iglympics-local --local && wrangler pages dev",
     "migrate:local": "echo y | wrangler d1 migrations apply iglympics-local --local",
     "build": "tsc && vite build",
     "check:ts": "tsc --noEmit",

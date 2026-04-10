@@ -1,0 +1,1 @@
+Use a user fixture with injected username from env for e2e tests.

@@ -10,7 +10,7 @@ test.describe("Login", () => {
 
   test("should login with valid credentials", async ({ page }) => {
     await page.goto("/login");
-    await page.fill('input[type="text"]', "alice");
+    await page.fill('input[type="text"]', "just");
     await page.fill('input[type="password"]', "iglympics2024");
     await page.click('button[type="submit"]');
 
@@ -20,7 +20,7 @@ test.describe("Login", () => {
 
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto("/login");
-    await page.fill('input[type="text"]', "alice");
+    await page.fill('input[type="text"]', "just");
     await page.fill('input[type="password"]', "wrongpassword");
     await page.click('button[type="submit"]');
 
