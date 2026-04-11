@@ -1,4 +1,8 @@
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  if (!context.env.SCOREBOARD_DO) {
+    return Response.json({ error: "WebSocket not available" }, { status: 503 });
+  }
+
   const upgradeHeader = context.request.headers.get("Upgrade");
   if (upgradeHeader !== "websocket") {
     return Response.json(

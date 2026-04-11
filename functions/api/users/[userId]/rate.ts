@@ -22,25 +22,29 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     );
   }
 
-  await context.env.DB.prepare(`
+  await context.env.DB.prepare(
+    `
     INSERT INTO ratings (rater_id, rated_id, rating, updated_at)
     VALUES (?, ?, ?, datetime('now'))
     ON CONFLICT(rater_id, rated_id) DO UPDATE SET
       rating = excluded.rating,
       updated_at = excluded.updated_at
-  `)
+  `,
+  )
     .bind(currentUser.id, userId, rating)
     .run();
 
-  const doId = context.env.SCOREBOARD_DO.idFromName("global");
-  const doStub = context.env.SCOREBOARD_DO.get(doId);
-  await doStub.fetch("https://do/broadcast", {
-    method: "POST",
-    body: JSON.stringify({
-      type: "rating_updated",
-      payload: { raterId: currentUser.id, ratedId: userId, rating },
-    }),
-  });
+  if (context.env.SCOREBOARD_DO) {
+    const doId = context.env.SCOREBOARD_DO.idFromName("global");
+    const doStub = context.env.SCOREBOARD_DO.get(doId);
+    await doStub.fetch("https://do/broadcast", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "rating_updated",
+        payload: { raterId: currentUser.id, ratedId: userId, rating },
+      }),
+    });
+  }
 
   return Response.json({ ok: true });
 };

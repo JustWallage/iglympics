@@ -71,15 +71,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   await context.env.DB.batch(stmts);
 
-  const doId = context.env.SCOREBOARD_DO.idFromName("global");
-  const doStub = context.env.SCOREBOARD_DO.get(doId);
-  await doStub.fetch("https://do/broadcast", {
-    method: "POST",
-    body: JSON.stringify({
-      type: "match_created",
-      payload: { matchId, game_name, outcome, team_a, team_b },
-    }),
-  });
+  if (context.env.SCOREBOARD_DO) {
+    const doId = context.env.SCOREBOARD_DO.idFromName("global");
+    const doStub = context.env.SCOREBOARD_DO.get(doId);
+    await doStub.fetch("https://do/broadcast", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "match_created",
+        payload: { matchId, game_name, outcome, team_a, team_b },
+      }),
+    });
+  }
 
   return Response.json({ matchId }, { status: 201 });
 };
