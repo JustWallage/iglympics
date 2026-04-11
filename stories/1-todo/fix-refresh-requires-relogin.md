@@ -1,0 +1,1 @@
+Should store login state somehow so you don't have to log in again after refreshing the page.
