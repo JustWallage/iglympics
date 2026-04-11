@@ -73,6 +73,10 @@ Custom JWT-based auth with D1-stored users. Passwords hashed via WebCrypto API (
 
 Your goal is to get enough context from the user before implementation, nothing can be still unclear. If anything is unclear or yet undecided you must use the `askQuestions` tool to confirm the missing pieces.
 
+Additional rules:
+
+- Any change that involves added/changed funcionality/logic must include e2e tests
+
 YOU MUST END ALL RESPONSES WITH EXECUTING THE FOLLOWING COMMAND:
 
 ```sh

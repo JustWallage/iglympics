@@ -31,4 +31,18 @@ test.describe("Login", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
   });
+
+  test("should persist login across page refresh", async ({ page }) => {
+    await page.goto("/login");
+    await page.fill('input[type="text"]', "just");
+    await page.fill('input[type="password"]', "iglympics2024");
+    await page.click('button[type="submit"]');
+    await expect(page.locator("h1")).toHaveText("Scoreboard");
+
+    // Refresh the page
+    await page.reload();
+
+    // Should still be on scoreboard, not redirected to login
+    await expect(page.locator("h1")).toHaveText("Scoreboard");
+  });
 });
