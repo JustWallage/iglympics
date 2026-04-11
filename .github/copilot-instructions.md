@@ -1,9 +1,5 @@
 # Project Context: Iglympics
 
-Task one: you must keep this document up to date, but only with the broad context of the project. Do not include specific implementation details. Only when significant changes/additions to the project context/stack occur, you must update this document.
-
-## Purpose
-
 Iglympics is a competition dashboard for tracking game scores and player ratings among a fixed group of 14 friends. It provides a real-time scoreboard, user profiles with peer ratings, and an admin panel for match management.
 
 ## Tech Stack
@@ -75,6 +71,7 @@ Your goal is to get enough context from the user before implementation, nothing 
 
 Additional rules:
 
+- You must keep this document up to date, but only with the broad context of the project. Do not include specific implementation details. Only when significant changes/additions to the project context/stack occur, you must update this document.
 - Any change that involves added/changed funcionality/logic must include e2e tests
 
 YOU MUST END ALL RESPONSES WITH EXECUTING THE FOLLOWING COMMAND:

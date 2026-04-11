@@ -1,23 +1,19 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
-import Login from "./pages/Login";
+import LoginModal from "./components/LoginModal";
 import Scoreboard from "./pages/Scoreboard";
 import Profile from "./pages/Profile";
 import AdminMatches from "./pages/AdminMatches";
 import Layout from "./components/Layout";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-}
-
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, openLoginModal } = useAuth();
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    openLoginModal();
+    return <Navigate to="/" replace />;
+  }
   if (!isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
@@ -26,15 +22,9 @@ export default function App() {
   return (
     <AuthProvider>
       <WebSocketProvider>
+        <LoginModal />
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
+          <Route element={<Layout />}>
             <Route index element={<Scoreboard />} />
             <Route path="profile/:userId" element={<Profile />} />
             <Route

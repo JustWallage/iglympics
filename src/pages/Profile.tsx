@@ -33,7 +33,7 @@ interface MatchHistory {
 
 export default function Profile() {
   const { userId } = useParams<{ userId: string }>();
-  const { user } = useAuth();
+  const { user, openLoginModal } = useAuth();
   const { subscribe } = useWebSocket();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -139,36 +139,45 @@ export default function Profile() {
       {!isSelf && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-3">Rate this player</h2>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setNewRating(star)}
-                  className={`text-2xl ${
-                    star <= newRating ? "text-yellow-400" : "text-gray-300"
-                  } hover:text-yellow-400`}
-                >
-                  ★
-                </button>
-              ))}
+          {user ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setNewRating(star)}
+                    className={`text-2xl ${
+                      star <= newRating ? "text-yellow-400" : "text-gray-300"
+                    } hover:text-yellow-400`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Write a note (required)"
+                required
+                className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                rows={2}
+              />
+              <button
+                onClick={submitRating}
+                disabled={submitting || newRating === 0 || !note.trim()}
+                className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                {submitting ? "Saving..." : "Submit Rating"}
+              </button>
             </div>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Write a note (required)"
-              required
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-              rows={2}
-            />
+          ) : (
             <button
-              onClick={submitRating}
-              disabled={submitting || newRating === 0 || !note.trim()}
-              className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              onClick={openLoginModal}
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
-              {submitting ? "Saving..." : "Submit Rating"}
+              Login to rate
             </button>
-          </div>
+          )}
         </div>
       )}
 

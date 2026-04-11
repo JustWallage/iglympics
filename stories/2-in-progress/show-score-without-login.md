@@ -1,0 +1,1 @@
+Make everything visible without being logged in, only hwen you want to submit a rating or score you must be logged in. Then to login open a modal with a form to input your name and password. Also update the existing e2e tests to reflect the changes. Also make sure to verify that it is possible to view the scoreboard and player ratings without being logged in.

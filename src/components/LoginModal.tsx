@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function Login() {
+export default function LoginModal() {
+  const { showLoginModal, closeLoginModal, login } = useAuth();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+
+  if (!showLoginModal) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +16,8 @@ export default function Login() {
     setSubmitting(true);
     try {
       await login(name, password);
-      navigate("/");
+      setName("");
+      setPassword("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -25,46 +26,60 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Iglympics</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={closeLoginModal}
+    >
+      <div
+        className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold">Sign in</h2>
+          <button
+            onClick={closeLoginModal}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            &times;
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3 rounded">
+            <div className="bg-red-50 text-red-600 text-sm p-2 rounded">
               {error}
             </div>
           )}
           <div>
             <label
-              htmlFor="name"
+              htmlFor="modal-name"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Name
             </label>
             <input
-              id="name"
+              id="modal-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Your name"
             />
           </div>
           <div>
             <label
-              htmlFor="password"
+              htmlFor="modal-password"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Password
             </label>
             <input
-              id="password"
+              id="modal-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="••••••••"
             />
           </div>

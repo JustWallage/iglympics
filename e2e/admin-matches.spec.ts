@@ -1,4 +1,6 @@
 import { test, expect } from "./fixtures";
+import { loginViaModal } from "./fixtures";
+import { test as baseTest, expect as baseExpect } from "@playwright/test";
 
 test.describe("Admin Match Submission", () => {
   test("should create a match as admin", async ({ loggedInPage: page }) => {
@@ -28,15 +30,19 @@ test.describe("Admin Match Submission", () => {
     // Should show success
     await expect(page.locator(".bg-green-50")).toHaveText("Match created!");
   });
+});
 
-  test("admin link should not be visible for non-admin", async ({ page }) => {
-    await page.goto("/login");
-    await page.fill('input[type="text"]', "bob");
-    await page.fill('input[type="password"]', "iglympics2024");
-    await page.click('button[type="submit"]');
-    await expect(page.locator("h1")).toHaveText("Scoreboard");
+baseTest.describe("Admin access control", () => {
+  baseTest(
+    "admin link should not be visible for non-admin",
+    async ({ page }) => {
+      await page.goto("/");
+      await loginViaModal(page, "bob", "iglympics2024");
 
-    // Admin link should not be visible
-    await expect(page.locator('a:has-text("Admin")')).not.toBeVisible();
-  });
+      // Admin link should not be visible
+      await baseExpect(
+        page.locator('a:has-text("Admin")'),
+      ).not.toBeVisible();
+    },
+  );
 });

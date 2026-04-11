@@ -2,12 +2,12 @@ import { Outlet, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Layout() {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, logout, openLoginModal } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -34,7 +34,7 @@ export default function Layout() {
             )}
           </div>
           <div className="flex items-center gap-4">
-            {user && (
+            {user ? (
               <>
                 <Link
                   to={`/profile/${user.id}`}
@@ -49,6 +49,13 @@ export default function Layout() {
                   Logout
                 </button>
               </>
+            ) : (
+              <button
+                onClick={openLoginModal}
+                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+              >
+                Login
+              </button>
             )}
           </div>
         </div>

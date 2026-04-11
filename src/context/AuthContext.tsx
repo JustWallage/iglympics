@@ -17,6 +17,9 @@ interface AuthContextType {
   login: (name: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  showLoginModal: boolean;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const fetchMe = useCallback(async () => {
     try {
@@ -66,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(err.error || "Login failed");
     }
     await fetchMe();
+    setShowLoginModal(false);
   };
 
   const logout = async () => {
@@ -74,8 +79,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(false);
   };
 
+  const openLoginModal = useCallback(() => setShowLoginModal(true), []);
+  const closeLoginModal = useCallback(() => setShowLoginModal(false), []);
+
   return (
-    <AuthContext.Provider value={{ user, isAdmin, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAdmin,
+        login,
+        logout,
+        loading,
+        showLoginModal,
+        openLoginModal,
+        closeLoginModal,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

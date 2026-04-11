@@ -1,1 +1,0 @@
-Make everything visible without being logged in, only hwen you want to submit a rating or score you must be logged in.
