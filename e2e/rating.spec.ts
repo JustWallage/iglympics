@@ -51,7 +51,8 @@ test.describe("Rating", () => {
       timeout: 5000,
     });
 
-    // Submit second rating
+    // Submit second rating — wait for form to reset after first submission
+    await expect(page.locator("textarea")).toHaveValue("");
     await stars.nth(2).click(); // 3 stars
     await page.fill("textarea", "Second rating!");
     await page.click('button:has-text("Submit Rating")');

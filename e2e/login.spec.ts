@@ -15,7 +15,9 @@ test.describe("Login", () => {
     // Should see the profile page
     await expect(page.locator("h1")).toBeVisible();
     // Should show "Login to rate" button instead of rating form
-    await expect(page.locator('button:has-text("Login to rate")')).toBeVisible();
+    await expect(
+      page.locator('button:has-text("Login to rate")'),
+    ).toBeVisible();
   });
 
   test("should login via modal", async ({ page }) => {
@@ -24,7 +26,9 @@ test.describe("Login", () => {
 
     // Should still be on scoreboard, now with user name in nav
     await expect(page.locator("h1")).toHaveText("Scoreboard");
-    await expect(page.locator('a:has-text("just")')).toBeVisible();
+    await expect(
+      page.locator("nav").locator('a:has-text("just")'),
+    ).toBeVisible();
   });
 
   test("should show error for invalid credentials", async ({ page }) => {
@@ -40,12 +44,16 @@ test.describe("Login", () => {
   test("should persist login across page refresh", async ({ page }) => {
     await page.goto("/");
     await loginViaModal(page, "just", "iglympics2024");
-    await expect(page.locator('a:has-text("just")')).toBeVisible();
+    await expect(
+      page.locator("nav").locator('a:has-text("just")'),
+    ).toBeVisible();
 
     await page.reload();
 
     // Should still be logged in
-    await expect(page.locator('a:has-text("just")')).toBeVisible();
+    await expect(
+      page.locator("nav").locator('a:has-text("just")'),
+    ).toBeVisible();
     await expect(page.locator('button:has-text("Login")')).not.toBeVisible();
   });
 });
