@@ -5,6 +5,7 @@ interface Env {
   SCOREBOARD_DO?: DurableObjectNamespace;
   JWT_SECRET: string;
   ADMIN_NAME: string;
+  ALLOW_TEST_RESET?: string;
 }
 
 type CFEventContext = EventContext<Env, string, unknown>;

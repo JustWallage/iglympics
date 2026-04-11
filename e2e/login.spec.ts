@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { test as authTest, expect as authExpect } from "./fixtures";
 
 test.describe("Login", () => {
   test("should show login page", async ({ page }) => {
@@ -14,7 +15,6 @@ test.describe("Login", () => {
     await page.fill('input[type="password"]', "iglympics2024");
     await page.click('button[type="submit"]');
 
-    // Should redirect to scoreboard
     await expect(page.locator("h1")).toHaveText("Scoreboard");
   });
 
@@ -39,10 +39,18 @@ test.describe("Login", () => {
     await page.click('button[type="submit"]');
     await expect(page.locator("h1")).toHaveText("Scoreboard");
 
-    // Refresh the page
     await page.reload();
 
-    // Should still be on scoreboard, not redirected to login
     await expect(page.locator("h1")).toHaveText("Scoreboard");
   });
+});
+
+authTest.describe("Login (authenticated)", () => {
+  authTest(
+    "should reset test data before test",
+    async ({ loggedInPage: page }) => {
+      // Verify we're logged in and on scoreboard
+      await authExpect(page.locator("h1")).toHaveText("Scoreboard");
+    },
+  );
 });

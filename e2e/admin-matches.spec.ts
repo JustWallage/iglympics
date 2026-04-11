@@ -1,18 +1,7 @@
-import { test, expect, Page } from "@playwright/test";
-
-async function loginAsAdmin(page: Page) {
-  await page.goto("/login");
-  // Admin is "just" (set via ADMIN_NAME env var)
-  await page.fill('input[type="text"]', "just");
-  await page.fill('input[type="password"]', "iglympics2024");
-  await page.click('button[type="submit"]');
-  await expect(page.locator("h1")).toHaveText("Scoreboard");
-}
+import { test, expect } from "./fixtures";
 
 test.describe("Admin Match Submission", () => {
-  test("should create a match as admin", async ({ page }) => {
-    await loginAsAdmin(page);
-
+  test("should create a match as admin", async ({ loggedInPage: page }) => {
     // Navigate to admin page
     await page.click('a:has-text("Admin")');
     await expect(page.locator("h1")).toHaveText("Submit Match");

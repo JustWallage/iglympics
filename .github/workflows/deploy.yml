@@ -85,6 +85,8 @@ jobs:
               printf '%s' "${!name}" | pnpm exec wrangler pages secret put "$name" --project-name iglympics --env "$env"
             done
           done
+          # ALLOW_TEST_RESET only for preview (staging), not production
+          printf 'true' | pnpm exec wrangler pages secret put ALLOW_TEST_RESET --project-name iglympics --env preview
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           ADMIN_NAME: ${{ secrets.ADMIN_NAME }}

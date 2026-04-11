@@ -1,27 +1,67 @@
-import { test, expect, Page } from "@playwright/test";
-
-async function loginAsJust(page: Page) {
-  await page.goto("/login");
-  await page.fill('input[type="text"]', "just");
-  await page.fill('input[type="password"]', "iglympics2024");
-  await page.click('button[type="submit"]');
-  await expect(page.locator("h1")).toHaveText("Scoreboard");
-}
+import { test, expect } from "./fixtures";
 
 test.describe("Rating", () => {
-  test("should rate another user from their profile", async ({ page }) => {
-    await loginAsJust(page);
-
+  test("should rate another user with a note", async ({
+    loggedInPage: page,
+  }) => {
     // Navigate to bob's profile
     await page.click('a:has-text("bob")');
     await expect(page.locator("h1")).toHaveText("bob");
 
-    // Rate bob 4 stars
+    // Rate bob 4 stars with a note
     const stars = page.locator("button:has-text('★')");
     await stars.nth(3).click(); // 4th star
-    await page.click('button:has-text("Submit")');
+    await page.fill("textarea", "Great chess player!");
+    await page.click('button:has-text("Submit Rating")');
 
-    // Verify rating was updated (avg should now show)
-    await expect(page.locator("text=4.00")).toBeVisible({ timeout: 5000 });
+    // Verify rating appears in the list
+    await expect(page.locator("text=Great chess player!")).toBeVisible({
+      timeout: 5000,
+    });
+  });
+
+  test("should require a note to submit rating", async ({
+    loggedInPage: page,
+  }) => {
+    await page.click('a:has-text("bob")');
+    await expect(page.locator("h1")).toHaveText("bob");
+
+    // Select stars but don't write a note
+    const stars = page.locator("button:has-text('★')");
+    await stars.nth(2).click(); // 3rd star
+
+    // Submit button should be disabled without a note
+    await expect(
+      page.locator('button:has-text("Submit Rating")'),
+    ).toBeDisabled();
+  });
+
+  test("should allow multiple ratings from same user", async ({
+    loggedInPage: page,
+  }) => {
+    await page.click('a:has-text("alice")');
+    await expect(page.locator("h1")).toHaveText("alice");
+
+    // Submit first rating
+    const stars = page.locator("button:has-text('★')");
+    await stars.nth(4).click(); // 5 stars
+    await page.fill("textarea", "First rating!");
+    await page.click('button:has-text("Submit Rating")');
+    await expect(page.locator("text=First rating!")).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Submit second rating
+    await stars.nth(2).click(); // 3 stars
+    await page.fill("textarea", "Second rating!");
+    await page.click('button:has-text("Submit Rating")');
+    await expect(page.locator("text=Second rating!")).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Both ratings should be visible with correct count
+    await expect(page.locator("text=First rating!")).toBeVisible();
+    await expect(page.locator("text=Second rating!")).toBeVisible();
+    await expect(page.locator("text=Ratings (2)")).toBeVisible();
   });
 });

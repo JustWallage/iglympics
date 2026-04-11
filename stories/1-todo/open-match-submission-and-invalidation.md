@@ -1,0 +1,2 @@
+Every player must be able to submit a match.
+However, every match may be marked as "Invalid" by any users, when a match has more than 7 invalidation votes (so 8 or more), it should be marked as invalid and not be counted in the scoreboard. Players may revoke their invalidation vote, if the match gets below 8 votes again, it should be marked as valid.

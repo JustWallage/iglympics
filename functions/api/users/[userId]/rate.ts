@@ -14,24 +14,24 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return Response.json({ error: "Cannot rate yourself" }, { status: 400 });
   }
 
-  const { rating } = (await context.request.json()) as { rating: number };
+  const { rating, note } = (await context.request.json()) as {
+    rating: number;
+    note: string;
+  };
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return Response.json(
       { error: "Rating must be an integer between 1 and 5" },
       { status: 400 },
     );
   }
+  if (!note || !note.trim()) {
+    return Response.json({ error: "Note is required" }, { status: 400 });
+  }
 
   await context.env.DB.prepare(
-    `
-    INSERT INTO ratings (rater_id, rated_id, rating, updated_at)
-    VALUES (?, ?, ?, datetime('now'))
-    ON CONFLICT(rater_id, rated_id) DO UPDATE SET
-      rating = excluded.rating,
-      updated_at = excluded.updated_at
-  `,
+    "INSERT INTO ratings (rater_id, rated_id, rating, note) VALUES (?, ?, ?, ?)",
   )
-    .bind(currentUser.id, userId, rating)
+    .bind(currentUser.id, userId, rating, note.trim())
     .run();
 
   if (context.env.SCOREBOARD_DO) {
@@ -46,5 +46,5 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true }, { status: 201 });
 };

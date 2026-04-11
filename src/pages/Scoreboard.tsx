@@ -11,6 +11,7 @@ interface PlayerScore {
   ties: number;
   matches_played: number;
   avg_rating: string;
+  rating_count: number;
 }
 
 export default function Scoreboard() {
@@ -89,7 +90,9 @@ export default function Scoreboard() {
                   {player.ties}
                 </td>
                 <td className="px-4 py-3 text-right">{player.matches_played}</td>
-                <td className="px-4 py-3 text-right">{player.avg_rating}</td>
+                <td className="px-4 py-3 text-right">
+                  {player.avg_rating} ({player.rating_count})
+                </td>
               </tr>
             ))}
           </tbody>
