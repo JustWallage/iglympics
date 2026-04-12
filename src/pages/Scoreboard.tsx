@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useWebSocket } from "../context/WebSocketContext";
+import { Card } from "../components/ui/card";
 
 interface PlayerScore {
   id: number;
@@ -18,6 +19,7 @@ export default function Scoreboard() {
   const [scores, setScores] = useState<PlayerScore[]>([]);
   const [loading, setLoading] = useState(true);
   const { subscribe } = useWebSocket();
+  const navigate = useNavigate();
 
   const fetchScores = useCallback(async () => {
     try {
@@ -45,59 +47,79 @@ export default function Scoreboard() {
   }, [subscribe, fetchScores]);
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-500">Loading...</div>;
+    return (
+      <div className="text-center py-8 text-[var(--color-text-muted)] font-heading text-xs">
+        LOADING...
+      </div>
+    );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Scoreboard</h1>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <h1 className="font-heading text-lg text-[var(--color-neon-pink)] mb-5">
+        Scoreboard
+      </h1>
+
+      <Card className="overflow-hidden p-0">
         <table className="w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium">#</th>
-              <th className="text-left px-4 py-3 font-medium">Player</th>
-              <th className="text-right px-4 py-3 font-medium">Points</th>
-              <th className="text-right px-4 py-3 font-medium">W</th>
-              <th className="text-right px-4 py-3 font-medium">L</th>
-              <th className="text-right px-4 py-3 font-medium">T</th>
-              <th className="text-right px-4 py-3 font-medium">Played</th>
-              <th className="text-right px-4 py-3 font-medium">Rating</th>
+          <thead>
+            <tr className="border-b-2 border-[var(--color-border)]">
+              <th className="text-left px-3 py-3 font-heading text-[9px] text-[var(--color-text-muted)]">
+                #
+              </th>
+              <th className="text-left px-3 py-3 font-heading text-[9px] text-[var(--color-text-muted)]">
+                Player
+              </th>
+              <th className="text-right px-3 py-3 font-heading text-[9px] text-[var(--color-text-muted)]">
+                PTS
+              </th>
+              <th className="text-right px-3 py-3 font-heading text-[9px] text-[var(--color-text-muted)]">
+                W
+              </th>
+              <th className="text-right px-3 py-3 font-heading text-[9px] text-[var(--color-text-muted)]">
+                L
+              </th>
+              <th className="text-right px-3 py-3 font-heading text-[9px] text-[var(--color-text-muted)]">
+                T
+              </th>
+              <th className="text-right px-3 py-3 font-heading text-[9px] text-[var(--color-text-muted)]">
+                ★
+              </th>
             </tr>
           </thead>
           <tbody>
             {scores.map((player, i) => (
-              <tr key={player.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 text-gray-500">{i + 1}</td>
-                <td className="px-4 py-3">
-                  <Link
-                    to={`/profile/${player.id}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {player.name}
-                  </Link>
+              <tr
+                key={player.id}
+                onClick={() => navigate(`/profile/${player.id}`)}
+                className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-elevated)] transition-colors cursor-pointer active:bg-[var(--color-bg-elevated)]"
+              >
+                <td className="px-3 py-3 font-heading text-xs text-[var(--color-text-muted)]">
+                  {String(i + 1).padStart(2, "0")}
                 </td>
-                <td className="px-4 py-3 text-right font-semibold">
+                <td className="px-3 py-3 text-[var(--color-neon-cyan)] font-bold uppercase tracking-wider">
+                  {player.name}
+                </td>
+                <td className="px-3 py-3 text-right font-heading text-sm text-[var(--color-neon-green)]">
                   {player.points}
                 </td>
-                <td className="px-4 py-3 text-right text-green-600">
+                <td className="px-3 py-3 text-right text-[var(--color-win)]">
                   {player.wins}
                 </td>
-                <td className="px-4 py-3 text-right text-red-600">
+                <td className="px-3 py-3 text-right text-[var(--color-loss)]">
                   {player.losses}
                 </td>
-                <td className="px-4 py-3 text-right text-yellow-600">
+                <td className="px-3 py-3 text-right text-[var(--color-tie)]">
                   {player.ties}
                 </td>
-                <td className="px-4 py-3 text-right">{player.matches_played}</td>
-                <td className="px-4 py-3 text-right">
-                  {player.avg_rating} ({player.rating_count})
+                <td className="px-3 py-3 text-right text-[var(--color-neon-yellow)]">
+                  {player.avg_rating}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

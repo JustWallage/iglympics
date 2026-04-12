@@ -1,4 +1,8 @@
 import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
 
 interface User {
   id: number;
@@ -77,7 +81,9 @@ export default function AdminMatches() {
         setParticipants([]);
       } else {
         const err = await res.json();
-        setMessage((err as { error?: string }).error || "Failed to create match");
+        setMessage(
+          (err as { error?: string }).error || "Failed to create match",
+        );
       }
     } finally {
       setSubmitting(false);
@@ -86,90 +92,101 @@ export default function AdminMatches() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Submit Match</h1>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow p-6 space-y-4"
-      >
-        {message && (
-          <div
-            className={`text-sm p-3 rounded ${message.includes("created") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}
-          >
-            {message}
-          </div>
-        )}
+      <h1 className="font-heading text-lg sm:text-2xl text-[var(--color-neon-pink)] mb-6">
+        Submit Match
+      </h1>
+      <Card>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {message && (
+              <div
+                className={`text-sm p-3 border-2 font-bold uppercase tracking-wider ${
+                  message.includes("created")
+                    ? "border-[var(--color-neon-green)] text-[var(--color-neon-green)] bg-[var(--color-neon-green)]/10"
+                    : "border-[var(--color-loss)] text-[var(--color-loss)] bg-[var(--color-loss)]/10"
+                }`}
+              >
+                {message}
+              </div>
+            )}
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Game Name</label>
-          <input
-            type="text"
-            value={gameName}
-            onChange={(e) => setGameName(e.target.value)}
-            required
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="e.g. Chess, Mario Kart"
-          />
-        </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                Game Name
+              </label>
+              <Input
+                type="text"
+                value={gameName}
+                onChange={(e) => setGameName(e.target.value)}
+                required
+                placeholder="e.g. Chess, Mario Kart"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Players</label>
-          <p className="text-xs text-gray-500 mb-2">
-            Click A or B to assign each player to a team
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {users.map((u) => {
-              const team = getTeam(u.id);
-              return (
-                <div
-                  key={u.id}
-                  className="flex items-center justify-between border rounded-md px-3 py-2"
-                >
-                  <span className="text-sm">{u.name}</span>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => togglePlayer(u.id, "A")}
-                      className={`px-2 py-0.5 text-xs rounded ${team === "A" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                Players
+              </label>
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">
+                Click A or B to assign each player to a team
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {users.map((u) => {
+                  const team = getTeam(u.id);
+                  return (
+                    <div
+                      key={u.id}
+                      className="flex items-center justify-between border-2 border-[var(--color-border)] px-3 py-2 bg-[var(--color-bg)]"
                     >
-                      A
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => togglePlayer(u.id, "B")}
-                      className={`px-2 py-0.5 text-xs rounded ${team === "B" ? "bg-red-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                    >
-                      B
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                      <span className="text-sm font-bold uppercase tracking-wider text-[var(--color-text)]">
+                        {u.name}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          onClick={() => togglePlayer(u.id, "A")}
+                          variant={team === "A" ? "primary" : "secondary"}
+                          size="sm"
+                        >
+                          A
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => togglePlayer(u.id, "B")}
+                          variant={team === "B" ? "danger" : "secondary"}
+                          size="sm"
+                        >
+                          B
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Outcome</label>
-          <select
-            value={outcome}
-            onChange={(e) =>
-              setOutcome(e.target.value as "team_a" | "team_b" | "tie")
-            }
-            className="w-full border rounded-md px-3 py-2 text-sm"
-          >
-            <option value="team_a">Team A wins</option>
-            <option value="team_b">Team B wins</option>
-            <option value="tie">Tie</option>
-          </select>
-        </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                Outcome
+              </label>
+              <Select
+                value={outcome}
+                onChange={(e) =>
+                  setOutcome(e.target.value as "team_a" | "team_b" | "tie")
+                }
+              >
+                <option value="team_a">Team A wins</option>
+                <option value="team_b">Team B wins</option>
+                <option value="tie">Tie</option>
+              </Select>
+            </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-blue-600 text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-        >
-          {submitting ? "Submitting..." : "Submit Match"}
-        </button>
-      </form>
+            <Button type="submit" disabled={submitting} className="w-full">
+              {submitting ? "Submitting..." : "Submit Match"}
+            </Button>
+          </CardContent>
+        </form>
+      </Card>
     </div>
   );
 }
