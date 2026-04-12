@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useWebSocket } from "../context/WebSocketContext";
+import { Card } from "../components/ui/card";
 
 interface PlayerScore {
   id: number;
@@ -18,6 +19,7 @@ export default function Scoreboard() {
   const [scores, setScores] = useState<PlayerScore[]>([]);
   const [loading, setLoading] = useState(true);
   const { subscribe } = useWebSocket();
+  const navigate = useNavigate();
 
   const fetchScores = useCallback(async () => {
     try {
@@ -45,59 +47,75 @@ export default function Scoreboard() {
   }, [subscribe, fetchScores]);
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-500">Loading...</div>;
+    return (
+      <div className="text-center py-12 text-white/35 text-sm">Loading...</div>
+    );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Scoreboard</h1>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <h1 className="text-xl font-bold text-white/90 mb-4">Scoreboard</h1>
+
+      <Card className="p-0 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium">#</th>
-              <th className="text-left px-4 py-3 font-medium">Player</th>
-              <th className="text-right px-4 py-3 font-medium">Points</th>
-              <th className="text-right px-4 py-3 font-medium">W</th>
-              <th className="text-right px-4 py-3 font-medium">L</th>
-              <th className="text-right px-4 py-3 font-medium">T</th>
-              <th className="text-right px-4 py-3 font-medium">Played</th>
-              <th className="text-right px-4 py-3 font-medium">Rating</th>
+          <thead>
+            <tr className="border-b border-white/[0.06]">
+              <th className="text-left px-4 py-3 text-xs font-medium text-white/35">
+                #
+              </th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-white/35">
+                Player
+              </th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-white/35">
+                Pts
+              </th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-white/35">
+                W
+              </th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-white/35">
+                L
+              </th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-white/35">
+                T
+              </th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-white/35">
+                ★
+              </th>
             </tr>
           </thead>
           <tbody>
             {scores.map((player, i) => (
-              <tr key={player.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 text-gray-500">{i + 1}</td>
-                <td className="px-4 py-3">
-                  <Link
-                    to={`/profile/${player.id}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {player.name}
-                  </Link>
+              <tr
+                key={player.id}
+                onClick={() => navigate(`/profile/${player.id}`)}
+                className="border-b border-white/[0.04] cursor-pointer transition-colors hover:bg-white/[0.04] active:bg-white/[0.06]"
+              >
+                <td className="px-4 py-3.5 text-white/30 text-xs">
+                  {i + 1}
                 </td>
-                <td className="px-4 py-3 text-right font-semibold">
+                <td className="px-4 py-3.5 text-accent-light font-medium">
+                  {player.name}
+                </td>
+                <td className="px-4 py-3.5 text-right font-semibold text-white/90 tabular-nums">
                   {player.points}
                 </td>
-                <td className="px-4 py-3 text-right text-green-600">
+                <td className="px-4 py-3.5 text-right text-emerald-400 tabular-nums">
                   {player.wins}
                 </td>
-                <td className="px-4 py-3 text-right text-red-600">
+                <td className="px-4 py-3.5 text-right text-red-400 tabular-nums">
                   {player.losses}
                 </td>
-                <td className="px-4 py-3 text-right text-yellow-600">
+                <td className="px-4 py-3.5 text-right text-amber-400 tabular-nums">
                   {player.ties}
                 </td>
-                <td className="px-4 py-3 text-right">{player.matches_played}</td>
-                <td className="px-4 py-3 text-right">
-                  {player.avg_rating} ({player.rating_count})
+                <td className="px-4 py-3.5 text-right text-sky-400 tabular-nums">
+                  {player.avg_rating}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

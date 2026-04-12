@@ -4,17 +4,15 @@ import { test as baseTest, expect as baseExpect } from "@playwright/test";
 
 test.describe("Admin Match Submission", () => {
   test("should create a match as admin", async ({ loggedInPage: page }) => {
-    // Navigate to admin page
-    await page.click('a:has-text("Admin")');
+    // Navigate to admin page via bottom nav
+    await page.click('nav a:has-text("Admin")');
     await expect(page.locator("h1")).toHaveText("Submit Match");
 
     // Fill in match details
     await page.fill('input[placeholder="e.g. Chess, Mario Kart"]', "Chess");
 
     // Add alice to Team A and bob to Team B
-    const playerRows = page.locator(
-      ".flex.items-center.justify-between.border",
-    );
+    const playerRows = page.locator(".flex.items-center.justify-between");
     const aliceRow = playerRows.filter({ hasText: "alice" });
     const bobRow = playerRows.filter({ hasText: "bob" });
 
@@ -28,7 +26,9 @@ test.describe("Admin Match Submission", () => {
     await page.click('button:has-text("Submit Match")');
 
     // Should show success
-    await expect(page.locator(".bg-green-50")).toHaveText("Match created!");
+    await expect(page.locator("form .text-emerald-400")).toHaveText(
+      "Match created!",
+    );
   });
 });
 
@@ -39,9 +39,9 @@ baseTest.describe("Admin access control", () => {
       await page.goto("/");
       await loginViaModal(page, "bob", "iglympics2024");
 
-      // Admin link should not be visible
+      // Admin link should not be visible in bottom nav
       await baseExpect(
-        page.locator('a:has-text("Admin")'),
+        page.locator('nav a:has-text("Admin")'),
       ).not.toBeVisible();
     },
   );

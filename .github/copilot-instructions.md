@@ -4,7 +4,7 @@ Iglympics is a competition dashboard for tracking game scores and player ratings
 
 ## Tech Stack
 
-- **Frontend**: React 19, Vite, Tailwind CSS v4, Shadcn UI, React Router
+- **Frontend**: React 19, Vite, Tailwind CSS v4, Shadcn-style UI components, React Router, Lucide React icons
 - **Backend**: Cloudflare Pages Functions (serverless API)
 - **Database**: Cloudflare D1 (SQLite-compatible, Staging + Production)
 - **Realtime**: Cloudflare Durable Objects with WebSockets (separate Worker)
@@ -12,6 +12,23 @@ Iglympics is a competition dashboard for tracking game scores and player ratings
 - **CI/CD**: GitHub Actions — Trunk-Based Development
 - **E2E Testing**: Playwright
 - **Package Manager**: pnpm
+
+## Design System: Dark Glassmorphism
+
+- **Theme**: Deep dark mode (`#0b0d17` background) with ambient gradient mesh (indigo/purple/sky radial gradients)
+- **Glass Effects**: `backdrop-blur-lg`, semi-transparent backgrounds (`bg-white/[0.04]`), subtle 1px translucent borders (`border-white/[0.08]`)
+- **Typography**: Inter font, white text at varying opacities (90%/55%/35%) for hierarchy
+- **Accent**: Indigo (`#6366f1`) with glow effects for primary actions
+- **Components**: Glassmorphic Card, Button, Input, Textarea, Select, Badge in `src/components/ui/`
+- **Styling strategy**: Design baked into CSS theme (`src/index.css`) and UI component files — avoid cluttering page files with excessive utility classes
+
+## Layout Constraints (Strictly Mobile-First)
+
+- **No breakpoints**: Strictly mobile layout only — no `sm:`, `md:`, `lg:` responsive shifts
+- **Desktop behavior**: App stays constrained to `max-w-md mx-auto min-h-dvh` centered on screen
+- **Navigation**: Fixed glassmorphic **bottom tab navigation** bar — no top nav bar
+- **Logout**: Located on the user's own Profile page (not in navigation)
+- **Touch targets**: Minimum `h-10`/`h-12` for interactive elements, ample padding
 
 ## Architecture
 

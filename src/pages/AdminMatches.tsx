@@ -1,4 +1,8 @@
 import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
 
 interface User {
   id: number;
@@ -77,7 +81,9 @@ export default function AdminMatches() {
         setParticipants([]);
       } else {
         const err = await res.json();
-        setMessage((err as { error?: string }).error || "Failed to create match");
+        setMessage(
+          (err as { error?: string }).error || "Failed to create match"
+        );
       }
     } finally {
       setSubmitting(false);
@@ -85,90 +91,103 @@ export default function AdminMatches() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Submit Match</h1>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow p-6 space-y-4"
-      >
-        {message && (
-          <div
-            className={`text-sm p-3 rounded ${message.includes("created") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}
-          >
-            {message}
-          </div>
-        )}
+    <div>
+      <h1 className="text-xl font-bold text-white/90 mb-4">Submit Match</h1>
+      <form onSubmit={handleSubmit}>
+        <Card>
+          <CardContent className="space-y-5">
+            {message && (
+              <div
+                className={`text-sm p-3 rounded-xl ${
+                  message.includes("created")
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : "bg-red-500/15 text-red-400"
+                }`}
+              >
+                {message}
+              </div>
+            )}
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Game Name</label>
-          <input
-            type="text"
-            value={gameName}
-            onChange={(e) => setGameName(e.target.value)}
-            required
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="e.g. Chess, Mario Kart"
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">
+                Game Name
+              </label>
+              <Input
+                type="text"
+                value={gameName}
+                onChange={(e) => setGameName(e.target.value)}
+                required
+                placeholder="e.g. Chess, Mario Kart"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Players</label>
-          <p className="text-xs text-gray-500 mb-2">
-            Click A or B to assign each player to a team
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {users.map((u) => {
-              const team = getTeam(u.id);
-              return (
-                <div
-                  key={u.id}
-                  className="flex items-center justify-between border rounded-md px-3 py-2"
-                >
-                  <span className="text-sm">{u.name}</span>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => togglePlayer(u.id, "A")}
-                      className={`px-2 py-0.5 text-xs rounded ${team === "A" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            <div>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">
+                Players
+              </label>
+              <p className="text-xs text-white/30 mb-2">
+                Tap A or B to assign each player to a team
+              </p>
+              <div className="space-y-2">
+                {users.map((u) => {
+                  const team = getTeam(u.id);
+                  return (
+                    <div
+                      key={u.id}
+                      className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3"
                     >
-                      A
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => togglePlayer(u.id, "B")}
-                      className={`px-2 py-0.5 text-xs rounded ${team === "B" ? "bg-red-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                    >
-                      B
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                      <span className="text-sm text-white/80">{u.name}</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => togglePlayer(u.id, "A")}
+                          className={`h-8 w-8 rounded-lg text-xs font-medium transition-all ${
+                            team === "A"
+                              ? "bg-accent text-white shadow-[0_0_12px_var(--color-accent-glow)]"
+                              : "bg-white/[0.06] text-white/40 active:bg-white/[0.1]"
+                          }`}
+                        >
+                          A
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => togglePlayer(u.id, "B")}
+                          className={`h-8 w-8 rounded-lg text-xs font-medium transition-all ${
+                            team === "B"
+                              ? "bg-red-500/80 text-white shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+                              : "bg-white/[0.06] text-white/40 active:bg-white/[0.1]"
+                          }`}
+                        >
+                          B
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Outcome</label>
-          <select
-            value={outcome}
-            onChange={(e) =>
-              setOutcome(e.target.value as "team_a" | "team_b" | "tie")
-            }
-            className="w-full border rounded-md px-3 py-2 text-sm"
-          >
-            <option value="team_a">Team A wins</option>
-            <option value="team_b">Team B wins</option>
-            <option value="tie">Tie</option>
-          </select>
-        </div>
+            <div>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">
+                Outcome
+              </label>
+              <Select
+                value={outcome}
+                onChange={(e) =>
+                  setOutcome(e.target.value as "team_a" | "team_b" | "tie")
+                }
+              >
+                <option value="team_a">Team A wins</option>
+                <option value="team_b">Team B wins</option>
+                <option value="tie">Tie</option>
+              </Select>
+            </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-blue-600 text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-        >
-          {submitting ? "Submitting..." : "Submit Match"}
-        </button>
+            <Button type="submit" disabled={submitting} className="w-full">
+              {submitting ? "Submitting..." : "Submit Match"}
+            </Button>
+          </CardContent>
+        </Card>
       </form>
     </div>
   );

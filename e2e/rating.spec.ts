@@ -4,8 +4,8 @@ test.describe("Rating", () => {
   test("should rate another user with a note", async ({
     loggedInPage: page,
   }) => {
-    // Navigate to bob's profile
-    await page.click('a:has-text("bob")');
+    // Navigate to bob's profile via scoreboard row
+    await page.locator("table tbody tr", { hasText: "bob" }).click();
     await expect(page.locator("h1")).toHaveText("bob");
 
     // Rate bob 4 stars with a note
@@ -23,7 +23,7 @@ test.describe("Rating", () => {
   test("should require a note to submit rating", async ({
     loggedInPage: page,
   }) => {
-    await page.click('a:has-text("bob")');
+    await page.locator("table tbody tr", { hasText: "bob" }).click();
     await expect(page.locator("h1")).toHaveText("bob");
 
     // Select stars but don't write a note
@@ -39,7 +39,7 @@ test.describe("Rating", () => {
   test("should allow multiple ratings from same user", async ({
     loggedInPage: page,
   }) => {
-    await page.click('a:has-text("alice")');
+    await page.locator("table tbody tr", { hasText: "alice" }).click();
     await expect(page.locator("h1")).toHaveText("alice");
 
     // Submit first rating

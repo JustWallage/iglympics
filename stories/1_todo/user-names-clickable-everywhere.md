@@ -1,0 +1,1 @@
+Make usermames clickable everywhere in the app, linking to their profile page. This includes the scoreboard, ratings, and anywhere else a username is displayed.

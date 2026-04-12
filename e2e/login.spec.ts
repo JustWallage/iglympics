@@ -10,8 +10,8 @@ test.describe("Login", () => {
 
   test("should show player profile without login", async ({ page }) => {
     await page.goto("/");
-    // Click on the first player link in the scoreboard
-    await page.locator("table a").first().click();
+    // Click on the first player row in the scoreboard table
+    await page.locator("table tbody tr").first().click();
     // Should see the profile page
     await expect(page.locator("h1")).toBeVisible();
     // Should show "Login to rate" button instead of rating form
@@ -24,10 +24,11 @@ test.describe("Login", () => {
     await page.goto("/");
     await loginViaModal(page, "just", "iglympics2024");
 
-    // Should still be on scoreboard, now with user name in nav
+    // Should still be on scoreboard
     await expect(page.locator("h1")).toHaveText("Scoreboard");
+    // Bottom nav should show Profile link (only visible when logged in)
     await expect(
-      page.locator("nav").locator('a:has-text("just")'),
+      page.locator("nav").locator('a:has-text("Profile")'),
     ).toBeVisible();
   });
 
@@ -38,22 +39,27 @@ test.describe("Login", () => {
     await page.fill("#modal-password", "wrongpassword");
     await page.click('button:has-text("Sign in")');
 
-    await expect(page.locator(".bg-red-50")).toHaveText("Invalid credentials");
+    await expect(page.locator("form .text-red-400")).toHaveText(
+      "Invalid credentials",
+    );
   });
 
   test("should persist login across page refresh", async ({ page }) => {
     await page.goto("/");
     await loginViaModal(page, "just", "iglympics2024");
     await expect(
-      page.locator("nav").locator('a:has-text("just")'),
+      page.locator("nav").locator('a:has-text("Profile")'),
     ).toBeVisible();
 
     await page.reload();
 
-    // Should still be logged in
+    // Should still be logged in (Profile link visible in bottom nav)
     await expect(
-      page.locator("nav").locator('a:has-text("just")'),
+      page.locator("nav").locator('a:has-text("Profile")'),
     ).toBeVisible();
-    await expect(page.locator('button:has-text("Login")')).not.toBeVisible();
+    // Login button should not be visible when logged in
+    await expect(
+      page.locator('nav button:has-text("Login")'),
+    ).not.toBeVisible();
   });
 });

@@ -1,0 +1,1 @@
+General group chat functionality
