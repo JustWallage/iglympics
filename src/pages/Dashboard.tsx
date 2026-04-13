@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useWebSocket } from "../context/WebSocketContext";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import MusicPlayer from "../components/MusicPlayer";
 import { Trophy, Star, MessageCircle, Swords } from "lucide-react";
 
 interface PlayerScore {
@@ -255,6 +256,9 @@ export default function Dashboard() {
           </div>
         )}
       </Card>
+
+      {/* Music Player */}
+      <MusicPlayer />
     </div>
   );
 }

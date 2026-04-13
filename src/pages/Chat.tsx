@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
+import { useMusicPlayer } from "../context/MusicContext";
 import { Send } from "lucide-react";
 
 interface Message {
@@ -13,6 +14,8 @@ interface Message {
 
 export default function Chat() {
   const { user } = useAuth();
+  const music = useMusicPlayer();
+  const hasMiniPlayer = music.songs.length > 0;
   const { subscribe } = useWebSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -129,7 +132,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col -mx-4 -mb-4" style={{ height: "calc(100dvh - 1.5rem - 5rem)" }}>
+    <div className="flex flex-col -mx-4 -mb-4" style={{ height: `calc(100dvh - 1.5rem - 5rem${hasMiniPlayer ? " - 3rem" : ""})` }}>
       {/* Messages area */}
       <div
         ref={containerRef}

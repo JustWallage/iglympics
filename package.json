@@ -8,7 +8,7 @@
     "dev": "vite",
     "dev:pages": "wrangler d1 migrations apply iglympics-local --local && wrangler pages dev",
     "migrate:local": "echo y | wrangler d1 migrations apply iglympics-local --local",
-    "build": "tsc && vite build",
+    "build": "node scripts/music-manifest.mjs && tsc && vite build",
     "check:ts": "tsc --noEmit",
     "check:tf:fmt": "cd iac && terraform fmt -check",
     "check:tf:validate": "cd iac && terraform validate",

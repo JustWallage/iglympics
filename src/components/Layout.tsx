@@ -1,10 +1,13 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Trophy, User, Zap, LogIn, Swords, MessageCircle, Home, CalendarDays } from "lucide-react";
+import { useMusicPlayer } from "../context/MusicContext";
+import { Trophy, User, Zap, LogIn, Swords, MessageCircle, Home, CalendarDays, Play, Pause, SkipForward } from "lucide-react";
 
 export default function Layout() {
   const { user, isAdmin, openLoginModal } = useAuth();
+  const music = useMusicPlayer();
   const location = useLocation();
+  const isHome = location.pathname === "/";
 
   const isActive = (path: string) =>
     path === "/"
@@ -26,6 +29,33 @@ export default function Layout() {
 
       {/* ── Bottom navigation (glassmorphic) ────────────────────────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40">
+        {/* Mini player - shown when not on dashboard and music has songs */}
+        {!isHome && music.songs.length > 0 && (
+          <div className="border-t border-white/[0.06] bg-white/[0.03] backdrop-blur-xl px-4 py-2">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={music.playing ? music.pause : music.play}
+                className="h-8 w-8 rounded-full bg-accent/80 text-white flex items-center justify-center shrink-0"
+              >
+                {music.playing ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium text-white/80 truncate">
+                  {music.current?.title}
+                </div>
+                <div className="text-[10px] text-white/40 truncate">
+                  {music.current?.artist}
+                </div>
+              </div>
+              <button
+                onClick={music.next}
+                className="p-1.5 text-white/40"
+              >
+                <SkipForward size={16} />
+              </button>
+            </div>
+          </div>
+        )}
         <div className="border-t border-white/[0.08] bg-white/[0.04] backdrop-blur-xl">
           <div className="flex items-center justify-around py-2">
             <Link
