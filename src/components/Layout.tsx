@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Trophy, User, Zap, LogIn, Swords } from "lucide-react";
+import { Trophy, User, Zap, LogIn, Swords, MessageCircle } from "lucide-react";
 
 export default function Layout() {
   const { user, isAdmin, openLoginModal } = useAuth();
@@ -31,7 +31,7 @@ export default function Layout() {
             <Link
               to="/"
               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
-                isActive("/") && !isActive("/profile") && !isActive("/admin") && !isActive("/matches")
+                isActive("/") && !isActive("/profile") && !isActive("/admin") && !isActive("/matches") && !isActive("/chat")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
@@ -50,6 +50,18 @@ export default function Layout() {
             >
               <Swords size={22} />
               <span className="text-[10px] font-medium">Matches</span>
+            </Link>
+
+            <Link
+              to="/chat"
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+                isActive("/chat")
+                  ? "text-accent-light"
+                  : "text-white/35 active:text-white/60"
+              }`}
+            >
+              <MessageCircle size={22} />
+              <span className="text-[10px] font-medium">Chat</span>
             </Link>
 
             {user && (

@@ -11,6 +11,7 @@ const PUBLIC_GET_PREFIXES = [
   "/api/users",
   "/api/matches",
   "/api/settings",
+  "/api/messages",
 ];
 
 export const onRequest: PagesFunction<Env>[] = [

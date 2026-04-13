@@ -4,6 +4,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   await context.env.DB.batch([
+    context.env.DB.prepare("DELETE FROM chat_messages"),
     context.env.DB.prepare("DELETE FROM match_votes"),
     context.env.DB.prepare("DELETE FROM ratings"),
     context.env.DB.prepare("DELETE FROM match_participants"),

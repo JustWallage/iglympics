@@ -5,6 +5,7 @@ import LoginModal from "./components/LoginModal";
 import Scoreboard from "./pages/Scoreboard";
 import Profile from "./pages/Profile";
 import Matches from "./pages/Matches";
+import Chat from "./pages/Chat";
 import AdminMatches from "./pages/AdminMatches";
 import Layout from "./components/Layout";
 
@@ -28,6 +29,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Scoreboard />} />
             <Route path="matches" element={<Matches />} />
+            <Route path="chat" element={<Chat />} />
             <Route path="profile/:userId" element={<Profile />} />
             <Route
               path="admin/matches"
