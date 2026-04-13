@@ -12,7 +12,7 @@ export default function Layout() {
       : location.pathname.startsWith(path);
 
   return (
-    <div className="max-w-md mx-auto min-h-dvh relative bg-bg pb-20 overflow-hidden">
+    <div className="min-h-dvh relative bg-bg pb-20 overflow-hidden">
       {/* Background decorative blobs — glass cards float in front */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-violet-500/20 blur-[80px]" />
@@ -26,7 +26,7 @@ export default function Layout() {
 
       {/* ── Bottom navigation (glassmorphic) ────────────────────────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40">
-        <div className="max-w-md mx-auto border-t border-white/[0.08] bg-white/[0.04] backdrop-blur-xl">
+        <div className="border-t border-white/[0.08] bg-white/[0.04] backdrop-blur-xl">
           <div className="flex items-center justify-around py-2">
             <Link
               to="/"
