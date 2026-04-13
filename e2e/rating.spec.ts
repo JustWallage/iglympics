@@ -4,7 +4,8 @@ test.describe("Rating", () => {
   test("should rate another user with a note", async ({
     loggedInPage: page,
   }) => {
-    // Navigate to bob's profile via scoreboard row
+    // Navigate to scoreboard then to bob's profile
+    await page.click('nav a:has-text("Board")');
     await page.locator("table tbody tr", { hasText: "bob" }).click();
     await expect(page.locator("h1")).toHaveText("bob");
 
@@ -23,6 +24,7 @@ test.describe("Rating", () => {
   test("should require a note to submit rating", async ({
     loggedInPage: page,
   }) => {
+    await page.click('nav a:has-text("Board")');
     await page.locator("table tbody tr", { hasText: "bob" }).click();
     await expect(page.locator("h1")).toHaveText("bob");
 
@@ -39,6 +41,7 @@ test.describe("Rating", () => {
   test("should allow multiple ratings from same user", async ({
     loggedInPage: page,
   }) => {
+    await page.click('nav a:has-text("Board")');
     await page.locator("table tbody tr", { hasText: "alice" }).click();
     await expect(page.locator("h1")).toHaveText("alice");
 

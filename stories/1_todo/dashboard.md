@@ -1,2 +1,1 @@
-Gerenal dashboard with top 3 or 5, latest chat messages, top voted comments/messages.
-Highest and lowest rated players.
+Gerenal dashboard with top 3, latest chat messages, highest and lowest rated players, and last match result.

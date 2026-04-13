@@ -2,14 +2,14 @@ import { test, expect } from "@playwright/test";
 import { loginViaModal } from "./fixtures";
 
 test.describe("Login", () => {
-  test("should show scoreboard without login", async ({ page }) => {
+  test("should show dashboard without login", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toHaveText("Scoreboard");
+    await expect(page.locator("h1")).toHaveText("Dashboard");
     await expect(page.locator('button:has-text("Login")')).toBeVisible();
   });
 
   test("should show player profile without login", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/scoreboard");
     // Click on the first player row in the scoreboard table
     await page.locator("table tbody tr").first().click();
     // Should see the profile page
@@ -24,8 +24,8 @@ test.describe("Login", () => {
     await page.goto("/");
     await loginViaModal(page, "just", "iglympics2024");
 
-    // Should still be on scoreboard
-    await expect(page.locator("h1")).toHaveText("Scoreboard");
+    // Should still be on dashboard
+    await expect(page.locator("h1")).toHaveText("Dashboard");
     // Bottom nav should show Profile link (only visible when logged in)
     await expect(
       page.locator("nav").locator('a:has-text("Profile")'),

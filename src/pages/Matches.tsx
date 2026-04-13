@@ -33,7 +33,7 @@ interface TeamEntry {
 }
 
 export default function Matches() {
-  const { user } = useAuth();
+  const { user, openLoginModal } = useAuth();
   const { subscribe } = useWebSocket();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,10 +170,14 @@ export default function Matches() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-white/90">Matches</h1>
-        {user && (
+        {user ? (
           <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5">
             <Plus size={16} />
             New Match
+          </Button>
+        ) : (
+          <Button size="sm" variant="secondary" onClick={openLoginModal}>
+            Login to add
           </Button>
         )}
       </div>

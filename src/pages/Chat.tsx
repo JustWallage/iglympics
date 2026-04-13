@@ -129,12 +129,12 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-5rem)]">
+    <div className="flex flex-col -mx-4 -mb-4" style={{ height: "calc(100dvh - 1.5rem - 5rem)" }}>
       {/* Messages area */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-1"
+        className="flex-1 overflow-y-auto px-4 pt-2 pb-2 space-y-1 min-h-0"
       >
         {messages.length === 0 ? (
           <div className="text-center py-12 text-white/30 text-sm">

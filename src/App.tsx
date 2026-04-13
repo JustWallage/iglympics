@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import LoginModal from "./components/LoginModal";
+import Dashboard from "./pages/Dashboard";
 import Scoreboard from "./pages/Scoreboard";
 import Profile from "./pages/Profile";
 import Matches from "./pages/Matches";
@@ -27,7 +28,8 @@ export default function App() {
         <LoginModal />
         <Routes>
           <Route element={<Layout />}>
-            <Route index element={<Scoreboard />} />
+            <Route index element={<Dashboard />} />
+            <Route path="scoreboard" element={<Scoreboard />} />
             <Route path="matches" element={<Matches />} />
             <Route path="chat" element={<Chat />} />
             <Route path="profile/:userId" element={<Profile />} />
