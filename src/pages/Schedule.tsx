@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
@@ -17,6 +17,7 @@ interface Activity {
 export default function Schedule() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const upcomingRef = useRef<HTMLDivElement>(null);
 
   const fetchActivities = useCallback(async () => {
     try {
@@ -33,6 +34,15 @@ export default function Schedule() {
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
+
+  // Auto-scroll to upcoming section after activities load
+  useEffect(() => {
+    if (!loading && upcomingRef.current) {
+      setTimeout(() => {
+        upcomingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [loading, activities]);
 
   if (loading) {
     return (
@@ -57,6 +67,72 @@ export default function Schedule() {
     });
   };
 
+  const now = new Date().toISOString().slice(0, 10);
+  const pastActivities = activities.filter(
+    (a) => a.released && a.date && a.date < now,
+  );
+  const upcomingActivities = activities.filter(
+    (a) => !a.released || !a.date || a.date >= now,
+  );
+
+  const renderCard = (a: Activity) =>
+    a.released ? (
+      <Card key={a.id} className="overflow-hidden p-0">
+        {a.image_url && (
+          <img
+            src={a.image_url}
+            alt={a.title || "Activity"}
+            className="w-full h-48 object-cover"
+          />
+        )}
+        <div className="p-5">
+          <h2 className="text-base font-semibold text-white/90 mb-2">
+            {a.title}
+          </h2>
+
+          <div className="flex items-center gap-3 mb-3">
+            {a.date && (
+              <Badge variant="info" className="gap-1">
+                <Calendar size={12} />
+                {formatDate(a.date)}
+              </Badge>
+            )}
+            {a.time && (
+              <Badge variant="default" className="gap-1">
+                <Clock size={12} />
+                {formatTime(a.time)}
+              </Badge>
+            )}
+          </div>
+
+          {a.description && (
+            <div
+              className="text-sm text-white/60 leading-relaxed [&_a]:text-accent-light [&_a]:underline"
+              dangerouslySetInnerHTML={{ __html: a.description }}
+            />
+          )}
+        </div>
+      </Card>
+    ) : (
+      <Card key={a.id} className="overflow-hidden p-0 relative">
+        {a.image_url ? (
+          <img
+            src={a.image_url}
+            alt="Upcoming activity"
+            className="w-full h-48 object-cover blur-xl scale-110"
+          />
+        ) : (
+          <div className="w-full h-48 bg-white/[0.04]" />
+        )}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
+          <Lock size={24} className="text-white/30" />
+          <span className="text-sm font-medium text-white/40">
+            Coming soon
+          </span>
+        </div>
+      </Card>
+    );
+
   return (
     <div>
       <h1 className="text-xl font-bold text-white/90 mb-4">Schedule</h1>
@@ -67,63 +143,26 @@ export default function Schedule() {
         </div>
       ) : (
         <div className="space-y-4">
-          {activities.map((a) =>
-            a.released ? (
-              <Card key={a.id} className="overflow-hidden p-0">
-                {a.image_url && (
-                  <img
-                    src={a.image_url}
-                    alt={a.title || "Activity"}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <div className="p-5">
-                  <h2 className="text-base font-semibold text-white/90 mb-2">
-                    {a.title}
-                  </h2>
+          {pastActivities.length > 0 && (
+            <>
+              {pastActivities.map(renderCard)}
+            </>
+          )}
 
-                  <div className="flex items-center gap-3 mb-3">
-                    {a.date && (
-                      <Badge variant="info" className="gap-1">
-                        <Calendar size={12} />
-                        {formatDate(a.date)}
-                      </Badge>
-                    )}
-                    {a.time && (
-                      <Badge variant="default" className="gap-1">
-                        <Clock size={12} />
-                        {formatTime(a.time)}
-                      </Badge>
-                    )}
-                  </div>
+          <div ref={upcomingRef} className="flex items-center gap-3 py-2">
+            <div className="flex-1 h-px bg-white/[0.1]" />
+            <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+              Upcoming activities
+            </span>
+            <div className="flex-1 h-px bg-white/[0.1]" />
+          </div>
 
-                  {a.description && (
-                    <div
-                      className="text-sm text-white/60 leading-relaxed [&_a]:text-accent-light [&_a]:underline"
-                      dangerouslySetInnerHTML={{ __html: a.description }}
-                    />
-                  )}
-                </div>
-              </Card>
-            ) : (
-              <Card key={a.id} className="overflow-hidden p-0 relative">
-                {a.image_url ? (
-                  <img
-                    src={a.image_url}
-                    alt="Upcoming activity"
-                    className="w-full h-48 object-cover blur-xl scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-48 bg-white/[0.04]" />
-                )}
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
-                  <Lock size={24} className="text-white/30" />
-                  <span className="text-sm font-medium text-white/40">
-                    Coming soon
-                  </span>
-                </div>
-              </Card>
-            ),
+          {upcomingActivities.length > 0 ? (
+            upcomingActivities.map(renderCard)
+          ) : (
+            <div className="text-center py-6 text-white/30 text-sm">
+              No upcoming activities
+            </div>
           )}
         </div>
       )}

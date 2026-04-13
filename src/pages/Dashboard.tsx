@@ -197,6 +197,16 @@ export default function Dashboard() {
           <div className="text-sm font-medium text-white/90 mb-1">
             {lastMatch.game_name}
           </div>
+          <div className="text-xs text-white/40 mb-2">
+            {new Date(lastMatch.played_at).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}{" "}
+            · {new Date(lastMatch.played_at).toLocaleTimeString(undefined, {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
           <div className="flex items-center gap-2 text-xs">
             <span
               className={
