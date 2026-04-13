@@ -85,3 +85,72 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   return Response.json({ matchId }, { status: 201 });
 };
+
+export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const matches = await context.env.DB.prepare(
+    `
+    SELECT m.id, m.game_name, m.outcome, m.played_at,
+           u.name as created_by_name
+    FROM matches m
+    JOIN users u ON u.id = m.created_by
+    ORDER BY m.played_at DESC
+    LIMIT 100
+    `,
+  ).all<{
+    id: number;
+    game_name: string;
+    outcome: string;
+    played_at: string;
+    created_by_name: string;
+  }>();
+
+  const matchIds = matches.results.map((m) => m.id);
+  if (matchIds.length === 0) {
+    return Response.json({ matches: [] });
+  }
+
+  const placeholders = matchIds.map(() => "?").join(",");
+  const participants = await context.env.DB.prepare(
+    `
+    SELECT mp.match_id, mp.team, mp.outcome as player_outcome, mp.points_earned,
+           u.id as user_id, u.name as user_name
+    FROM match_participants mp
+    JOIN users u ON u.id = mp.user_id
+    WHERE mp.match_id IN (${placeholders})
+    ORDER BY mp.team, u.name
+    `,
+  )
+    .bind(...matchIds)
+    .all<{
+      match_id: number;
+      team: string;
+      player_outcome: string;
+      points_earned: number;
+      user_id: number;
+      user_name: string;
+    }>();
+
+  const participantsByMatch = new Map<
+    number,
+    { team_a: string[]; team_b: string[] }
+  >();
+  for (const p of participants.results) {
+    if (!participantsByMatch.has(p.match_id)) {
+      participantsByMatch.set(p.match_id, { team_a: [], team_b: [] });
+    }
+    const entry = participantsByMatch.get(p.match_id)!;
+    if (p.team === "A") {
+      entry.team_a.push(p.user_name);
+    } else {
+      entry.team_b.push(p.user_name);
+    }
+  }
+
+  const result = matches.results.map((m) => ({
+    ...m,
+    team_a: participantsByMatch.get(m.id)?.team_a ?? [],
+    team_b: participantsByMatch.get(m.id)?.team_b ?? [],
+  }));
+
+  return Response.json({ matches: result });
+};

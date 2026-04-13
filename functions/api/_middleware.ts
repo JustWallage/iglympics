@@ -6,7 +6,7 @@ interface JWTPayload {
 }
 
 const PUBLIC_PATHS = ["/api/login", "/api/seed", "/api/test/reset"];
-const PUBLIC_GET_PREFIXES = ["/api/scoreboard", "/api/users"];
+const PUBLIC_GET_PREFIXES = ["/api/scoreboard", "/api/users", "/api/matches"];
 
 export const onRequest: PagesFunction<Env>[] = [
   async (context) => {

@@ -1,0 +1,1 @@
+Overview of all past matches, plus a button to add a new match (modal).

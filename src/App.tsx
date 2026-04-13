@@ -4,6 +4,7 @@ import { WebSocketProvider } from "./context/WebSocketContext";
 import LoginModal from "./components/LoginModal";
 import Scoreboard from "./pages/Scoreboard";
 import Profile from "./pages/Profile";
+import Matches from "./pages/Matches";
 import AdminMatches from "./pages/AdminMatches";
 import Layout from "./components/Layout";
 
@@ -26,6 +27,7 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Scoreboard />} />
+            <Route path="matches" element={<Matches />} />
             <Route path="profile/:userId" element={<Profile />} />
             <Route
               path="admin/matches"
