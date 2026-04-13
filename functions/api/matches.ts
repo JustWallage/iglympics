@@ -13,10 +13,6 @@ interface MatchInput {
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const currentUser = (context.data as { user: UserData }).user;
 
-  if (currentUser.name !== context.env.ADMIN_NAME) {
-    return Response.json({ error: "Forbidden: admin only" }, { status: 403 });
-  }
-
   const { game_name, team_a, team_b, outcome } =
     (await context.request.json()) as MatchInput;
 
@@ -69,6 +65,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     );
   }
 
+  // Auto-confirm vote from creator
+  stmts.push(
+    context.env.DB.prepare(
+      "INSERT INTO match_votes (match_id, user_id, vote) VALUES (?, ?, 'confirm')",
+    ).bind(matchId, currentUser.id),
+  );
+
   await context.env.DB.batch(stmts);
 
   if (context.env.SCOREBOARD_DO) {
@@ -87,12 +90,31 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 };
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  // Get current user if authenticated
+  const currentUser = (context.data as { user?: UserData }).user;
+
+  // Get thresholds
+  const thresholdRows = await context.env.DB.prepare(
+    "SELECT key, value FROM settings WHERE key IN ('confirm_threshold', 'reject_threshold')",
+  ).all<{ key: string; value: string }>();
+
+  const thresholds: Record<string, number> = {};
+  for (const row of thresholdRows.results) {
+    thresholds[row.key] = parseInt(row.value, 10);
+  }
+  const confirmThreshold = thresholds.confirm_threshold ?? 4;
+  const rejectThreshold = thresholds.reject_threshold ?? 8;
+
   const matches = await context.env.DB.prepare(
     `
     SELECT m.id, m.game_name, m.outcome, m.played_at,
-           u.name as created_by_name
+           u.name as created_by_name,
+           COALESCE(SUM(CASE WHEN mv.vote = 'confirm' THEN 1 ELSE 0 END), 0) as confirms,
+           COALESCE(SUM(CASE WHEN mv.vote = 'reject' THEN 1 ELSE 0 END), 0) as rejects
     FROM matches m
     JOIN users u ON u.id = m.created_by
+    LEFT JOIN match_votes mv ON mv.match_id = m.id
+    GROUP BY m.id
     ORDER BY m.played_at DESC
     LIMIT 100
     `,
@@ -102,14 +124,22 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     outcome: string;
     played_at: string;
     created_by_name: string;
+    confirms: number;
+    rejects: number;
   }>();
 
   const matchIds = matches.results.map((m) => m.id);
   if (matchIds.length === 0) {
-    return Response.json({ matches: [] });
+    return Response.json({
+      matches: [],
+      confirm_threshold: confirmThreshold,
+      reject_threshold: rejectThreshold,
+    });
   }
 
   const placeholders = matchIds.map(() => "?").join(",");
+
+  // Get participants
   const participants = await context.env.DB.prepare(
     `
     SELECT mp.match_id, mp.team, mp.outcome as player_outcome, mp.points_earned,
@@ -130,6 +160,20 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       user_name: string;
     }>();
 
+  // Get current user's votes (if authenticated)
+  let userVotes = new Map<number, string>();
+  if (currentUser) {
+    const votes = await context.env.DB.prepare(
+      `SELECT match_id, vote FROM match_votes WHERE user_id = ? AND match_id IN (${placeholders})`,
+    )
+      .bind(currentUser.id, ...matchIds)
+      .all<{ match_id: number; vote: string }>();
+
+    for (const v of votes.results) {
+      userVotes.set(v.match_id, v.vote);
+    }
+  }
+
   const participantsByMatch = new Map<
     number,
     { team_a: string[]; team_b: string[] }
@@ -146,11 +190,36 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
   }
 
-  const result = matches.results.map((m) => ({
-    ...m,
-    team_a: participantsByMatch.get(m.id)?.team_a ?? [],
-    team_b: participantsByMatch.get(m.id)?.team_b ?? [],
-  }));
+  const result = matches.results
+    .map((m) => {
+      const status =
+        m.rejects >= rejectThreshold
+          ? "rejected"
+          : m.confirms >= confirmThreshold
+            ? "confirmed"
+            : "pending";
+      return {
+        ...m,
+        team_a: participantsByMatch.get(m.id)?.team_a ?? [],
+        team_b: participantsByMatch.get(m.id)?.team_b ?? [],
+        status,
+        my_vote: userVotes.get(m.id) ?? null,
+      };
+    })
+    // Hide rejected matches from non-admin users
+    .filter((m) => {
+      if (
+        m.status === "rejected" &&
+        currentUser?.name !== context.env.ADMIN_NAME
+      ) {
+        return false;
+      }
+      return true;
+    });
 
-  return Response.json({ matches: result });
+  return Response.json({
+    matches: result,
+    confirm_threshold: confirmThreshold,
+    reject_threshold: rejectThreshold,
+  });
 };

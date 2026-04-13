@@ -1,0 +1,1 @@
+Make the tables and navbar stretch the full width of the screen, this way it'll always look good on mobile.

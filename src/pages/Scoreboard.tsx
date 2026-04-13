@@ -11,6 +11,7 @@ interface PlayerScore {
   losses: number;
   ties: number;
   matches_played: number;
+  pending_points: number;
   avg_rating: string;
   rating_count: number;
 }
@@ -98,6 +99,11 @@ export default function Scoreboard() {
                 </td>
                 <td className="px-4 py-3.5 text-right font-semibold text-white/90 tabular-nums">
                   {player.points}
+                  {player.pending_points > 0 && (
+                    <span className="text-white/25 text-xs ml-1">
+                      +{player.pending_points}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3.5 text-right text-emerald-400 tabular-nums">
                   {player.wins}

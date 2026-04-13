@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { X } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { X, Plus, Check, XCircle } from "lucide-react";
 
 interface Match {
   id: number;
@@ -12,20 +16,52 @@ interface Match {
   created_by_name: string;
   team_a: string[];
   team_b: string[];
+  confirms: number;
+  rejects: number;
+  status: "pending" | "confirmed" | "rejected";
+  my_vote: string | null;
+}
+
+interface User {
+  id: number;
+  name: string;
+}
+
+interface TeamEntry {
+  userId: number;
+  team: "A" | "B";
 }
 
 export default function Matches() {
+  const { user } = useAuth();
+  const { subscribe } = useWebSocket();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Match | null>(null);
-  const { subscribe } = useWebSocket();
+  const [showCreate, setShowCreate] = useState(false);
+  const [confirmThreshold, setConfirmThreshold] = useState(4);
+  const [rejectThreshold, setRejectThreshold] = useState(8);
+
+  // Create match form state
+  const [users, setUsers] = useState<User[]>([]);
+  const [gameName, setGameName] = useState("");
+  const [participants, setParticipants] = useState<TeamEntry[]>([]);
+  const [outcome, setOutcome] = useState<"team_a" | "team_b" | "tie">("team_a");
+  const [submitting, setSubmitting] = useState(false);
+  const [createMessage, setCreateMessage] = useState("");
 
   const fetchMatches = useCallback(async () => {
     try {
       const res = await fetch("/api/matches");
       if (res.ok) {
-        const data = await res.json();
-        setMatches((data as { matches: Match[] }).matches);
+        const data = await res.json() as {
+          matches: Match[];
+          confirm_threshold: number;
+          reject_threshold: number;
+        };
+        setMatches(data.matches);
+        setConfirmThreshold(data.confirm_threshold);
+        setRejectThreshold(data.reject_threshold);
       }
     } finally {
       setLoading(false);
@@ -41,25 +77,106 @@ export default function Matches() {
     return unsub;
   }, [subscribe, fetchMatches]);
 
+  // Fetch users when create modal opens
+  useEffect(() => {
+    if (showCreate && users.length === 0) {
+      fetch("/api/users")
+        .then((r) => r.json() as Promise<{ users: User[] }>)
+        .then((data) => setUsers(data.users));
+    }
+  }, [showCreate, users.length]);
+
+  const vote = async (matchId: number, voteType: "confirm" | "reject") => {
+    await fetch(`/api/matches/${matchId}/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vote: voteType }),
+    });
+    await fetchMatches();
+  };
+
+  const togglePlayer = (userId: number, team: "A" | "B") => {
+    setParticipants((prev) => {
+      const existing = prev.find((p) => p.userId === userId);
+      if (existing) {
+        if (existing.team === team) return prev.filter((p) => p.userId !== userId);
+        return prev.map((p) => (p.userId === userId ? { ...p, team } : p));
+      }
+      return [...prev, { userId, team }];
+    });
+  };
+
+  const getTeam = (userId: number) =>
+    participants.find((p) => p.userId === userId)?.team;
+
+  const handleCreateMatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateMessage("");
+
+    const teamA = participants.filter((p) => p.team === "A").map((p) => p.userId);
+    const teamB = participants.filter((p) => p.team === "B").map((p) => p.userId);
+
+    if (teamA.length === 0 || teamB.length === 0) {
+      setCreateMessage("Both teams need at least 1 player");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ game_name: gameName, team_a: teamA, team_b: teamB, outcome }),
+      });
+      if (res.ok) {
+        setShowCreate(false);
+        setGameName("");
+        setParticipants([]);
+        setCreateMessage("");
+        await fetchMatches();
+      } else {
+        const err = await res.json();
+        setCreateMessage((err as { error?: string }).error || "Failed to create match");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const statusBadge = (m: Match) => {
+    if (m.status === "confirmed") return <Badge variant="success">Confirmed</Badge>;
+    if (m.status === "rejected") return <Badge variant="danger">Rejected</Badge>;
+    return (
+      <Badge variant="default">
+        {m.confirms}/{confirmThreshold}
+      </Badge>
+    );
+  };
+
+  // Sort: unvoted matches first, then voted matches
+  const sortedMatches = [...matches].sort((a, b) => {
+    const aVoted = a.my_vote ? 1 : 0;
+    const bVoted = b.my_vote ? 1 : 0;
+    return aVoted - bVoted;
+  });
+
   if (loading) {
     return (
       <div className="text-center py-12 text-white/35 text-sm">Loading...</div>
     );
   }
 
-  const outcomeLabel = (m: Match) =>
-    m.outcome === "team_a"
-      ? `${m.team_a.join(", ")} won`
-      : m.outcome === "team_b"
-        ? `${m.team_b.join(", ")} won`
-        : "Draw";
-
-  const outcomeBadge = (m: Match) =>
-    m.outcome === "tie" ? "warning" : "success";
-
   return (
     <div>
-      <h1 className="text-xl font-bold text-white/90 mb-4">Matches</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-white/90">Matches</h1>
+        {user && (
+          <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5">
+            <Plus size={16} />
+            New Match
+          </Button>
+        )}
+      </div>
 
       {matches.length === 0 ? (
         <div className="text-center py-12 text-white/30 text-sm">
@@ -67,49 +184,76 @@ export default function Matches() {
         </div>
       ) : (
         <div className="space-y-3">
-          {matches.map((m) => (
-            <Card
-              key={m.id}
-              className="cursor-pointer transition-colors hover:bg-white/[0.06] active:bg-white/[0.08]"
-              onClick={() => setSelected(m)}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-semibold text-white/90 text-sm">
-                    {m.game_name}
+          {sortedMatches.map((m) => (
+            <Card key={m.id}>
+              <div
+                className="cursor-pointer"
+                onClick={() => setSelected(m)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-white/90 text-sm">
+                      {m.game_name}
+                    </div>
+                    <div className="text-xs text-white/40 mt-0.5">
+                      {new Date(m.played_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      · {new Date(m.played_at).toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </div>
-                  <div className="text-xs text-white/40 mt-0.5">
-                    {new Date(m.played_at).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}{" "}
-                    · {new Date(m.played_at).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                  {statusBadge(m)}
+                </div>
+
+                <div className="mt-3 flex items-center gap-2 text-xs">
+                  <div
+                    className={`flex-1 text-right ${m.outcome === "team_a" ? "text-emerald-400 font-medium" : "text-white/50"}`}
+                  >
+                    {m.team_a.join(", ")}
+                  </div>
+                  <span className="text-white/20 text-[10px] font-medium px-1">
+                    vs
+                  </span>
+                  <div
+                    className={`flex-1 ${m.outcome === "team_b" ? "text-emerald-400 font-medium" : "text-white/50"}`}
+                  >
+                    {m.team_b.join(", ")}
                   </div>
                 </div>
-                <Badge variant={outcomeBadge(m)} className="shrink-0">
-                  {m.outcome === "tie" ? "Draw" : "Result"}
-                </Badge>
               </div>
 
-              <div className="mt-3 flex items-center gap-2 text-xs">
-                <div
-                  className={`flex-1 text-right ${m.outcome === "team_a" ? "text-emerald-400 font-medium" : "text-white/50"}`}
-                >
-                  {m.team_a.join(", ")}
+              {/* Vote buttons */}
+              {user && m.status !== "rejected" && (
+                <div className="mt-3 pt-3 border-t border-white/[0.06] flex gap-2">
+                  <button
+                    onClick={() => vote(m.id, "confirm")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl text-xs font-medium transition-all ${
+                      m.my_vote === "confirm"
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-white/[0.04] text-white/40 border border-white/[0.06] active:bg-white/[0.08]"
+                    }`}
+                  >
+                    <Check size={14} />
+                    Confirm ({m.confirms})
+                  </button>
+                  <button
+                    onClick={() => vote(m.id, "reject")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl text-xs font-medium transition-all ${
+                      m.my_vote === "reject"
+                        ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                        : "bg-white/[0.04] text-white/40 border border-white/[0.06] active:bg-white/[0.08]"
+                    }`}
+                  >
+                    <XCircle size={14} />
+                    Reject ({m.rejects})
+                  </button>
                 </div>
-                <span className="text-white/20 text-[10px] font-medium px-1">
-                  vs
-                </span>
-                <div
-                  className={`flex-1 ${m.outcome === "team_b" ? "text-emerald-400 font-medium" : "text-white/50"}`}
-                >
-                  {m.team_b.join(", ")}
-                </div>
-              </div>
+              )}
+
             </Card>
           ))}
         </div>
@@ -118,7 +262,7 @@ export default function Matches() {
       {/* Detail modal */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
           onClick={() => setSelected(null)}
         >
           <div
@@ -138,6 +282,13 @@ export default function Matches() {
             </div>
 
             <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                {statusBadge(selected)}
+                <span className="text-xs text-white/40">
+                  {selected.confirms} confirms · {selected.rejects} rejects
+                </span>
+              </div>
+
               <div className="text-xs text-white/40">
                 {new Date(selected.played_at).toLocaleDateString(undefined, {
                   weekday: "long",
@@ -145,7 +296,8 @@ export default function Matches() {
                   day: "numeric",
                   year: "numeric",
                 })}{" "}
-                at {new Date(selected.played_at).toLocaleTimeString(undefined, {
+                at{" "}
+                {new Date(selected.played_at).toLocaleTimeString(undefined, {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
@@ -153,8 +305,16 @@ export default function Matches() {
 
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
                 <div className="text-center mb-3">
-                  <Badge variant={outcomeBadge(selected)}>
-                    {outcomeLabel(selected)}
+                  <Badge
+                    variant={
+                      selected.outcome === "tie" ? "warning" : "success"
+                    }
+                  >
+                    {selected.outcome === "team_a"
+                      ? `${selected.team_a.join(", ")} won`
+                      : selected.outcome === "team_b"
+                        ? `${selected.team_b.join(", ")} won`
+                        : "Draw"}
                   </Badge>
                 </div>
 
@@ -195,6 +355,118 @@ export default function Matches() {
                 Created by {selected.created_by_name}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create match modal */}
+      {showCreate && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+          onClick={() => setShowCreate(false)}
+        >
+          <div
+            className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl border border-white/[0.1] bg-white/[0.06] backdrop-blur-xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white/90">
+                New Match
+              </h2>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="text-white/30 hover:text-white/60 transition-colors p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateMatch} className="space-y-4">
+              {createMessage && (
+                <div className="rounded-xl bg-red-500/15 text-red-400 text-sm p-3">
+                  {createMessage}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">
+                  Game Name
+                </label>
+                <Input
+                  type="text"
+                  value={gameName}
+                  onChange={(e) => setGameName(e.target.value)}
+                  required
+                  placeholder="e.g. Chess, Mario Kart"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">
+                  Players
+                </label>
+                <p className="text-xs text-white/30 mb-2">
+                  Tap A or B to assign to a team
+                </p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {users.map((u) => {
+                    const team = getTeam(u.id);
+                    return (
+                      <div
+                        key={u.id}
+                        className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5"
+                      >
+                        <span className="text-sm text-white/80">{u.name}</span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => togglePlayer(u.id, "A")}
+                            className={`h-8 w-8 rounded-lg text-xs font-medium transition-all ${
+                              team === "A"
+                                ? "bg-accent text-white shadow-[0_0_12px_var(--color-accent-glow)]"
+                                : "bg-white/[0.06] text-white/40 active:bg-white/[0.1]"
+                            }`}
+                          >
+                            A
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => togglePlayer(u.id, "B")}
+                            className={`h-8 w-8 rounded-lg text-xs font-medium transition-all ${
+                              team === "B"
+                                ? "bg-red-500/80 text-white shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+                                : "bg-white/[0.06] text-white/40 active:bg-white/[0.1]"
+                            }`}
+                          >
+                            B
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">
+                  Outcome
+                </label>
+                <Select
+                  value={outcome}
+                  onChange={(e) =>
+                    setOutcome(e.target.value as "team_a" | "team_b" | "tie")
+                  }
+                >
+                  <option value="team_a">Team A wins</option>
+                  <option value="team_b">Team B wins</option>
+                  <option value="tie">Tie</option>
+                </Select>
+              </div>
+
+              <Button type="submit" disabled={submitting} className="w-full">
+                {submitting ? "Creating..." : "Create Match"}
+              </Button>
+            </form>
           </div>
         </div>
       )}
