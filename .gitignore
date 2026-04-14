@@ -10,3 +10,5 @@ playwright-report/
 iac/.terraform/
 iac/.terraform.lock.hcl
 iac/terraform.tfstate*
+users.json
+users-links.md

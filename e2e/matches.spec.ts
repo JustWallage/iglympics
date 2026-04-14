@@ -92,6 +92,10 @@ test.describe("Matches Page", () => {
 });
 
 baseTest.describe("Matches Page (unauthenticated)", () => {
+  baseTest.beforeEach(async ({ page }) => {
+    await page.request.post("/api/test/reset");
+  });
+
   baseTest("should show matches page without login", async ({ page }) => {
     await page.goto("/matches");
     await dismissSplash(page);
@@ -103,4 +107,51 @@ baseTest.describe("Matches Page (unauthenticated)", () => {
       page.locator('button:has-text("New Match")'),
     ).not.toBeVisible();
   });
+
+  baseTest(
+    "should show help modal with default thresholds",
+    async ({ page }) => {
+      await page.goto("/matches");
+      await dismissSplash(page);
+
+      // Click the help button
+      await page.click('button[aria-label="How matches work"]');
+      await baseExpect(
+        page.locator('h2:has-text("How matches work")'),
+      ).toBeVisible();
+
+      // Default thresholds should be displayed
+      await baseExpect(page.getByTestId("confirm-threshold")).toHaveText("4");
+      await baseExpect(page.getByTestId("reject-threshold")).toHaveText("8");
+
+      // Close modal via close button
+      await page.getByTestId("help-close").click();
+      await baseExpect(
+        page.locator('h2:has-text("How matches work")'),
+      ).not.toBeVisible();
+    },
+  );
+
+  baseTest(
+    "should show help modal with custom thresholds set by admin",
+    async ({ page }) => {
+      // Login as admin and change thresholds via API
+      await page.request.post("/api/login", {
+        data: { name: "just", password: "iglympics2024" },
+      });
+      await page.request.post("/api/settings", {
+        data: { confirm_threshold: 5, reject_threshold: 10 },
+      });
+
+      await page.goto("/matches");
+      await dismissSplash(page);
+
+      await page.click('button[aria-label="How matches work"]');
+      await baseExpect(
+        page.locator('h2:has-text("How matches work")'),
+      ).toBeVisible();
+      await baseExpect(page.getByTestId("confirm-threshold")).toHaveText("5");
+      await baseExpect(page.getByTestId("reject-threshold")).toHaveText("10");
+    },
+  );
 });

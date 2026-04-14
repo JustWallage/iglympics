@@ -6,7 +6,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
-import { X, Plus, Check, XCircle } from "lucide-react";
+import { X, Plus, Check, XCircle, HelpCircle } from "lucide-react";
 
 interface Match {
   id: number;
@@ -49,6 +49,7 @@ export default function Matches() {
   const [outcome, setOutcome] = useState<"team_a" | "team_b" | "tie">("team_a");
   const [submitting, setSubmitting] = useState(false);
   const [createMessage, setCreateMessage] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -169,7 +170,16 @@ export default function Matches() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white/90">Matches</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-white/90">Matches</h1>
+          <button
+            onClick={() => setShowHelp(true)}
+            className="text-white hover:text-white/60 transition-colors p-1"
+            aria-label="How matches work"
+          >
+            <HelpCircle size={18} />
+          </button>
+        </div>
         {user ? (
           <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5">
             <Plus size={16} />
@@ -358,6 +368,49 @@ export default function Matches() {
               <div className="text-[11px] text-white/30">
                 Created by {selected.created_by_name}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help modal */}
+      {showHelp && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+          onClick={() => setShowHelp(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-white/[0.1] bg-white/[0.06] backdrop-blur-xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white/90">
+                How matches work
+              </h2>
+              <button
+                onClick={() => setShowHelp(false)}
+                className="text-white/30 hover:text-white/60 transition-colors p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-3 text-sm text-white/60">
+              <p>Anyone can submit a new match result.</p>
+              <p>
+                Once a match receives{" "}
+                <span className="text-white/90 font-medium" data-testid="confirm-threshold">
+                  {confirmThreshold}
+                </span>{" "}
+                or more confirmations, it is counted towards the scoreboard.
+              </p>
+              <p>
+                However, if a match is rejected by{" "}
+                <span className="text-white/90 font-medium" data-testid="reject-threshold">
+                  {rejectThreshold}
+                </span>{" "}
+                or more people, it is always rejected regardless of how many
+                people confirmed it.
+              </p>
             </div>
           </div>
         </div>
