@@ -13,6 +13,7 @@ const PUBLIC_GET_PREFIXES = [
   "/api/settings",
   "/api/messages",
   "/api/activities",
+  "/api/minigame-scores",
 ];
 
 export const onRequest: PagesFunction<Env>[] = [

@@ -4,7 +4,7 @@ import { useWebSocket } from "../context/WebSocketContext";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import MusicPlayer from "../components/MusicPlayer";
-import { Trophy, Star, MessageCircle, Swords } from "lucide-react";
+import { Trophy, Star, MessageCircle, Swords, Gamepad2 } from "lucide-react";
 
 interface PlayerScore {
   id: number;
@@ -20,6 +20,12 @@ interface ChatMessage {
   content: string;
   created_at: string;
   user_name: string;
+}
+
+interface MinigameLeaderEntry {
+  user_id: number;
+  user_name: string;
+  points: number;
 }
 
 interface Match {
@@ -38,14 +44,16 @@ export default function Dashboard() {
   const [scores, setScores] = useState<PlayerScore[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [lastMatch, setLastMatch] = useState<Match | null>(null);
+  const [minigameTop, setMinigameTop] = useState<MinigameLeaderEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     try {
-      const [scoreRes, msgRes, matchRes] = await Promise.all([
+      const [scoreRes, msgRes, matchRes, mgRes] = await Promise.all([
         fetch("/api/scoreboard"),
         fetch("/api/messages?limit=5"),
         fetch("/api/matches"),
+        fetch("/api/minigame-scores"),
       ]);
 
       if (scoreRes.ok) {
@@ -61,6 +69,12 @@ export default function Dashboard() {
         if (data.matches.length > 0) {
           setLastMatch(data.matches[0]);
         }
+      }
+      if (mgRes.ok) {
+        const data = (await mgRes.json()) as {
+          global_leaderboard: MinigameLeaderEntry[];
+        };
+        setMinigameTop(data.global_leaderboard.slice(0, 3));
       }
     } finally {
       setLoading(false);
@@ -228,6 +242,35 @@ export default function Dashboard() {
             >
               {lastMatch.team_b.join(", ")}
             </span>
+          </div>
+        </Card>
+      )}
+
+      {/* Minigame Champions */}
+      {minigameTop.length > 0 && (
+        <Card
+          className="cursor-pointer active:bg-white/[0.06] transition-colors"
+          onClick={() => navigate("/games")}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Gamepad2 size={16} className="text-fuchsia-400" />
+            <span className="text-sm font-semibold text-white/80">Minigame Champions</span>
+          </div>
+          <div className="space-y-2">
+            {minigameTop.map((entry, i) => (
+              <div
+                key={entry.user_id}
+                className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{["🥇", "🥈", "🥉"][i]}</span>
+                  <span className="text-sm text-white/80">{entry.user_name}</span>
+                </div>
+                <span className="text-sm font-semibold text-white/70 tabular-nums">
+                  {entry.points} pts
+                </span>
+              </div>
+            ))}
           </div>
         </Card>
       )}

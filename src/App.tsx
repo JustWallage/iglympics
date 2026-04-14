@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import Matches from "./pages/Matches";
 import Chat from "./pages/Chat";
 import Schedule from "./pages/Schedule";
+import Minigames from "./pages/Minigames";
 import AdminMatches from "./pages/AdminMatches";
 import Layout from "./components/Layout";
 
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="matches" element={<Matches />} />
               <Route path="chat" element={<Chat />} />
               <Route path="schedule" element={<Schedule />} />
+              <Route path="games" element={<Minigames />} />
               <Route path="profile/:userId" element={<Profile />} />
               <Route
                 path="admin/matches"

@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useMusicPlayer } from "../context/MusicContext";
-import { Trophy, User, Zap, LogIn, Swords, MessageCircle, Home, CalendarDays, Play, Pause, SkipForward } from "lucide-react";
+import { Trophy, User, Zap, LogIn, Swords, MessageCircle, Home, CalendarDays, Gamepad2, Play, Pause, SkipForward } from "lucide-react";
 
 export default function Layout() {
   const { user, isAdmin, openLoginModal } = useAuth();
@@ -61,7 +61,7 @@ export default function Layout() {
             <Link
               to="/"
               className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
-                isActive("/") && !isActive("/profile") && !isActive("/admin") && !isActive("/matches") && !isActive("/chat") && !isActive("/scoreboard") && !isActive("/schedule")
+                isActive("/") && !isActive("/profile") && !isActive("/admin") && !isActive("/matches") && !isActive("/chat") && !isActive("/scoreboard") && !isActive("/schedule") && !isActive("/games")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
@@ -116,6 +116,18 @@ export default function Layout() {
             >
               <CalendarDays size={22} />
               <span className="text-[10px] font-medium truncate max-w-full px-1">Schedule</span>
+            </Link>
+
+            <Link
+              to="/games"
+              className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
+                isActive("/games")
+                  ? "text-accent-light"
+                  : "text-white/35 active:text-white/60"
+              }`}
+            >
+              <Gamepad2 size={22} />
+              <span className="text-[10px] font-medium truncate max-w-full px-1">Games</span>
             </Link>
 
             {user && (

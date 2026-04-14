@@ -1,6 +1,6 @@
 # Project Context: Iglympics
 
-Iglympics is a competition dashboard for tracking game scores and player ratings among a fixed group of 14 friends. It provides a real-time scoreboard, user profiles with peer ratings, and an admin panel for match management.
+Iglympics is a competition dashboard for tracking game scores, player ratings, and minigame high scores among a fixed group of 14 friends. It provides a real-time scoreboard, user profiles with peer ratings, an admin panel for match management, and a minigames arcade with per-game leaderboards.
 
 ## Tech Stack
 
@@ -95,14 +95,14 @@ After completing every response, you MUST call the `vscode_askQuestions` tool wi
 
 json
 {
-  "questions": [
-    {
-      "header": "",
-      "question": "Anything else?",
-      "allowFreeformInput": true,
-      "multiSelect": false
-    }
-  ]
+"questions": [
+{
+"header": "",
+"question": "Anything else?",
+"allowFreeformInput": true,
+"multiSelect": false
+}
+]
 }
 
 Do this at the end of every response, without exception.
