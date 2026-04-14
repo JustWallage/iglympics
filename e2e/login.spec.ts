@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { loginViaModal } from "./fixtures";
+import { dismissSplash, loginViaModal } from "./fixtures";
 
 test.describe("Login", () => {
   test("should show dashboard without login", async ({ page }) => {
     await page.goto("/");
-    await page.click('button:has-text("Enter")');
+    await dismissSplash(page);
     await expect(
       page.locator("h1", { hasText: "Dashboard" }).first(),
     ).toBeVisible();
@@ -13,7 +13,7 @@ test.describe("Login", () => {
 
   test("should show player profile without login", async ({ page }) => {
     await page.goto("/scoreboard");
-    await page.click('button:has-text("Enter")');
+    await dismissSplash(page);
     // Click on the first player row in the scoreboard table
     await page.locator("table tbody tr").first().click();
     // Should see the profile page
@@ -38,7 +38,7 @@ test.describe("Login", () => {
 
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto("/");
-    await page.click('button:has-text("Enter")');
+    await dismissSplash(page);
     await page.click('button:has-text("Login")');
     await page.fill("#modal-name", "just");
     await page.fill("#modal-password", "wrongpassword");
@@ -57,7 +57,7 @@ test.describe("Login", () => {
     ).toBeVisible();
 
     await page.reload();
-    await page.click('button:has-text("Enter")');
+    await dismissSplash(page);
 
     // Should still be logged in (Profile link visible in bottom nav)
     await expect(

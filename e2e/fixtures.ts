@@ -1,7 +1,15 @@
 import { test as base, expect, Page } from "@playwright/test";
 
+async function dismissSplash(page: Page) {
+  const enterBtn = page.locator('button:has-text("Enter")');
+  if (await enterBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await enterBtn.click();
+    await expect(enterBtn).not.toBeVisible({ timeout: 2000 });
+  }
+}
+
 async function loginViaModal(page: Page, name: string, password: string) {
-  await page.click('button:has-text("Enter")');
+  await dismissSplash(page);
   await page.click('button:has-text("Login")');
   await page.fill("#modal-name", name);
   await page.fill("#modal-password", password);
@@ -19,13 +27,12 @@ export const test = base.extend<Fixtures>({
     // Reset test data before each test
     await page.request.post("/api/test/reset");
 
-    // Go to scoreboard and login via modal
+    // Go to home and login via modal
     await page.goto("/");
-    await page.click('button:has-text("Enter")');
     await loginViaModal(page, "just", "iglympics2024");
 
     await use(page);
   },
 });
 
-export { expect, loginViaModal };
+export { expect, loginViaModal, dismissSplash };

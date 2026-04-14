@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, dismissSplash } from "./fixtures";
 import { test as baseTest, expect as baseExpect } from "@playwright/test";
 
 test.describe("Matches Page", () => {
@@ -94,7 +94,7 @@ test.describe("Matches Page", () => {
 baseTest.describe("Matches Page (unauthenticated)", () => {
   baseTest("should show matches page without login", async ({ page }) => {
     await page.goto("/matches");
-    await page.click('button:has-text("Enter")');
+    await dismissSplash(page);
     await expect(
       page.locator("h1", { hasText: "Matches" }).first(),
     ).toBeVisible();

@@ -1,4 +1,4 @@
-import { test, expect, loginViaModal } from "./fixtures";
+import { test, expect, loginViaModal, dismissSplash } from "./fixtures";
 import { test as baseTest, expect as baseExpect } from "@playwright/test";
 
 test.describe("Chat", () => {
@@ -77,6 +77,7 @@ test.describe("Chat", () => {
 baseTest.describe("Chat (unauthenticated)", () => {
   baseTest("should show chat but not input", async ({ page }) => {
     await page.goto("/chat");
+    await dismissSplash(page);
     await baseExpect(
       page.locator("text=Log in to send messages"),
     ).toBeVisible();
