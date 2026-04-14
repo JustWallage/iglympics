@@ -1,0 +1,1 @@
+Logging in with a link that contains your username password in the URL query parameters

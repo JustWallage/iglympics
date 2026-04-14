@@ -5,7 +5,7 @@ interface UserEntry {
   password: string;
 }
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequest: PagesFunction<Env> = async (context) => {
   const usersJson = context.env.USERS_JSON;
   if (!usersJson) {
     return Response.json(
