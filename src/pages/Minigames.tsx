@@ -36,12 +36,14 @@ interface GameDef {
   emoji: string;
 }
 
-const GAMES: GameDef[] = [{ id: "snake", name: "Snake", emoji: "🐍" }];
+const GAMES: GameDef[] = [
+  { id: "snake", name: "Snake", emoji: "🐍" },
+  { id: "flappy", name: "Flappy Bird", emoji: "🐦" },
+];
 
 // ─── Snake Game ──────────────────────────────────────────────────────────────
 
 const GRID = 16;
-const CELL = 0; // calculated dynamically
 const TICK_MS = 140;
 
 type Dir = "UP" | "DOWN" | "LEFT" | "RIGHT";
@@ -231,6 +233,232 @@ function SnakeBoard({
   );
 }
 
+// ─── Flappy Bird Game ────────────────────────────────────────────────────────
+
+const FLAPPY_W = 288;
+const FLAPPY_H = 400;
+const BIRD_SIZE = 20;
+const PIPE_WIDTH = 44;
+const PIPE_GAP = 135;
+const GRAVITY = 0.3;
+const JUMP_VEL = -5.5;
+const PIPE_SPEED = 1.8;
+
+interface Pipe {
+  x: number;
+  topH: number;
+  scored: boolean;
+}
+
+function useFlappyBird(onGameOver: (score: number) => void) {
+  const [birdY, setBirdY] = useState(FLAPPY_H / 2);
+  const [pipes, setPipes] = useState<Pipe[]>([]);
+  const [score, setScore] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  const velRef = useRef(0);
+  const birdRef = useRef(FLAPPY_H / 2);
+  const pipesRef = useRef<Pipe[]>([]);
+  const scoreRef = useRef(0);
+  const runningRef = useRef(false);
+  const frameRef = useRef(0);
+
+  const reset = useCallback(() => {
+    birdRef.current = FLAPPY_H / 2;
+    velRef.current = 0;
+    pipesRef.current = [];
+    scoreRef.current = 0;
+    setBirdY(FLAPPY_H / 2);
+    setPipes([]);
+    setScore(0);
+    setGameOver(false);
+    setRunning(false);
+    runningRef.current = false;
+    setCountdown(3);
+  }, []);
+
+  const flap = useCallback(() => {
+    if (runningRef.current) {
+      velRef.current = JUMP_VEL;
+    }
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const id = setTimeout(() => {
+      const next = countdown - 1;
+      setCountdown(next);
+      if (next === 0) {
+        setRunning(true);
+        runningRef.current = true;
+      }
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [countdown]);
+
+  useEffect(() => {
+    if (!running || gameOver) return;
+
+    const tick = () => {
+      if (!runningRef.current) return;
+
+      // Bird physics
+      velRef.current += GRAVITY;
+      birdRef.current += velRef.current;
+
+      // Floor / ceiling
+      if (birdRef.current < 0) birdRef.current = 0;
+      if (birdRef.current + BIRD_SIZE > FLAPPY_H) {
+        runningRef.current = false;
+        setRunning(false);
+        setGameOver(true);
+        setBirdY(birdRef.current);
+        onGameOver(scoreRef.current);
+        return;
+      }
+
+      // Move pipes
+      const updated = pipesRef.current.map((p) => ({ ...p, x: p.x - PIPE_SPEED }));
+
+      // Remove off-screen
+      const filtered = updated.filter((p) => p.x + PIPE_WIDTH > 0);
+
+      // Score
+      for (const p of filtered) {
+        if (!p.scored && p.x + PIPE_WIDTH < 50) {
+          p.scored = true;
+          scoreRef.current += 1;
+          setScore(scoreRef.current);
+        }
+      }
+
+      // Spawn new pipe
+      const last = filtered[filtered.length - 1];
+      if (!last || last.x < FLAPPY_W - 180) {
+        const topH = 40 + Math.random() * (FLAPPY_H - PIPE_GAP - 80);
+        filtered.push({ x: FLAPPY_W, topH, scored: false });
+      }
+
+      // Collision
+      const bx = 50;
+      const by = birdRef.current;
+      for (const p of filtered) {
+        if (bx + BIRD_SIZE > p.x && bx < p.x + PIPE_WIDTH) {
+          if (by < p.topH || by + BIRD_SIZE > p.topH + PIPE_GAP) {
+            runningRef.current = false;
+            setRunning(false);
+            setGameOver(true);
+            setPipes(filtered);
+            setBirdY(birdRef.current);
+            onGameOver(scoreRef.current);
+            return;
+          }
+        }
+      }
+
+      pipesRef.current = filtered;
+      setPipes([...filtered]);
+      setBirdY(birdRef.current);
+      frameRef.current = requestAnimationFrame(tick);
+    };
+
+    frameRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameRef.current);
+  }, [running, gameOver, onGameOver]);
+
+  // Keyboard + touch
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.code === "Space" || e.key === "ArrowUp") {
+        e.preventDefault();
+        flap();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [flap]);
+
+  return { birdY, pipes, score, running, gameOver, countdown, reset, flap };
+}
+
+function FlappyBoard({
+  birdY,
+  pipes,
+  onTap,
+}: {
+  birdY: number;
+  pipes: Pipe[];
+  onTap: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        setScale(w / FLAPPY_W);
+      }
+    };
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="w-full">
+      <div
+        className="relative mx-auto rounded-lg border border-white/[0.1] overflow-hidden"
+        style={{
+          width: FLAPPY_W * scale,
+          height: FLAPPY_H * scale,
+          background: "linear-gradient(to bottom, #1a1a2e 0%, #16213e 60%, #0f3460 100%)",
+        }}
+        onPointerDown={onTap}
+      >
+        {/* Bird */}
+        <div
+          className="absolute rounded-full bg-yellow-400"
+          style={{
+            width: BIRD_SIZE * scale,
+            height: BIRD_SIZE * scale,
+            left: 50 * scale,
+            top: birdY * scale,
+          }}
+        />
+        {/* Pipes */}
+        {pipes.map((p, i) => (
+          <div key={i}>
+            {/* Top pipe */}
+            <div
+              className="absolute bg-emerald-600 rounded-b-sm"
+              style={{
+                width: PIPE_WIDTH * scale,
+                height: p.topH * scale,
+                left: p.x * scale,
+                top: 0,
+              }}
+            />
+            {/* Bottom pipe */}
+            <div
+              className="absolute bg-emerald-600 rounded-t-sm"
+              style={{
+                width: PIPE_WIDTH * scale,
+                left: p.x * scale,
+                top: (p.topH + PIPE_GAP) * scale,
+                height: (FLAPPY_H - p.topH - PIPE_GAP) * scale,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function Minigames() {
@@ -286,11 +514,28 @@ export default function Minigames() {
   );
 
   const snakeGame = useSnake(handleGameOver);
+  const flappyGame = useFlappyBird(handleGameOver);
+  const [gameOverReady, setGameOverReady] = useState(false);
 
   const startGame = () => {
     setPlaying(true);
-    snakeGame.reset();
+    setGameOverReady(false);
+    if (selectedGame?.id === "snake") snakeGame.reset();
+    else if (selectedGame?.id === "flappy") flappyGame.reset();
   };
+
+  // Delay-enable buttons after game over to prevent accidental taps
+  const isGameOverNow =
+    (selectedGame?.id === "snake" && snakeGame.gameOver) ||
+    (selectedGame?.id === "flappy" && flappyGame.gameOver);
+  useEffect(() => {
+    if (!isGameOverNow) {
+      setGameOverReady(false);
+      return;
+    }
+    const id = setTimeout(() => setGameOverReady(true), 1500);
+    return () => clearTimeout(id);
+  }, [isGameOverNow]);
 
   const medals = ["🥇", "🥈", "🥉"];
 
@@ -489,7 +734,9 @@ export default function Minigames() {
                 </div>
 
                 <Button onClick={startGame} className="w-full">
-                  {snakeGame.gameOver ? "Play Again" : "Start Game"}
+                  {(selectedGame.id === "snake" ? snakeGame.gameOver : flappyGame.gameOver)
+                    ? "Play Again"
+                    : "Start Game"}
                 </Button>
                 {!user && (
                   <p className="text-xs text-white/30 text-center mt-2">
@@ -500,86 +747,125 @@ export default function Minigames() {
             ) : (
               <>
                 {/* In-game view */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">
-                      Score: {snakeGame.score}
-                    </Badge>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setPlaying(false);
-                    }}
-                    className="text-white/30 hover:text-white/60 transition-colors p-1"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
+                {(() => {
+                  const currentScore =
+                    selectedGame.id === "snake" ? snakeGame.score : flappyGame.score;
+                  const isGameOver =
+                    selectedGame.id === "snake"
+                      ? snakeGame.gameOver
+                      : flappyGame.gameOver;
 
-                <SnakeBoard snake={snakeGame.snake} food={snakeGame.food} />
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <Badge variant="default">Score: {currentScore}</Badge>
+                        <button
+                          onClick={() => setPlaying(false)}
+                          className="text-white/30 hover:text-white/60 transition-colors p-1"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
 
-                {snakeGame.gameOver && (
-                  <div className="mt-3 text-center">
-                    <p className="text-sm text-white/70 mb-2">
-                      Game Over! Score:{" "}
-                      <span className="font-bold text-white/90">
-                        {snakeGame.score}
-                      </span>
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={startGame}
-                        className="flex-1"
-                      >
-                        Play Again
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => setPlaying(false)}
-                        className="flex-1"
-                      >
-                        Back
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                      {selectedGame.id === "snake" && (
+                        <SnakeBoard snake={snakeGame.snake} food={snakeGame.food} />
+                      )}
+                      {selectedGame.id === "flappy" && (
+                        <div className="relative">
+                          <FlappyBoard
+                            birdY={flappyGame.birdY}
+                            pipes={flappyGame.pipes}
+                            onTap={flappyGame.flap}
+                          />
+                          {flappyGame.countdown > 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                              <span className="text-5xl font-bold text-white/90">
+                                {flappyGame.countdown}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                {/* D-pad controls for mobile */}
-                {!snakeGame.gameOver && (
-                  <div className="mt-4 flex justify-center">
-                    <div className="grid grid-cols-3 gap-1.5 w-36">
-                      <div />
-                      <button
-                        onPointerDown={() => snakeGame.changeDir("UP")}
-                        className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
-                      >
-                        <ArrowUp size={22} />
-                      </button>
-                      <div />
-                      <button
-                        onPointerDown={() => snakeGame.changeDir("LEFT")}
-                        className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
-                      >
-                        <ArrowLeft size={22} />
-                      </button>
-                      <div />
-                      <button
-                        onPointerDown={() => snakeGame.changeDir("RIGHT")}
-                        className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
-                      >
-                        <ArrowRight size={22} />
-                      </button>
-                      <div />
-                      <button
-                        onPointerDown={() => snakeGame.changeDir("DOWN")}
-                        className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
-                      >
-                        <ArrowDown size={22} />
-                      </button>
-                      <div />
-                    </div>
-                  </div>
-                )}
+                      {isGameOver && (
+                        <div className="mt-3 text-center">
+                          <p className="text-sm text-white/70 mb-2">
+                            Game Over! Score:{" "}
+                            <span className="font-bold text-white/90">
+                              {currentScore}
+                            </span>
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={startGame}
+                              disabled={!gameOverReady}
+                              className="flex-1"
+                            >
+                              Play Again
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={() => setPlaying(false)}
+                              disabled={!gameOverReady}
+                              className="flex-1"
+                            >
+                              Back
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Snake D-pad controls */}
+                      {selectedGame.id === "snake" && !snakeGame.gameOver && (
+                        <div className="mt-4 flex justify-center">
+                          <div className="grid grid-cols-3 gap-1.5 w-36">
+                            <div />
+                            <button
+                              onPointerDown={() => snakeGame.changeDir("UP")}
+                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                            >
+                              <ArrowUp size={22} />
+                            </button>
+                            <div />
+                            <button
+                              onPointerDown={() => snakeGame.changeDir("LEFT")}
+                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                            >
+                              <ArrowLeft size={22} />
+                            </button>
+                            <div />
+                            <button
+                              onPointerDown={() => snakeGame.changeDir("RIGHT")}
+                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                            >
+                              <ArrowRight size={22} />
+                            </button>
+                            <div />
+                            <button
+                              onPointerDown={() => snakeGame.changeDir("DOWN")}
+                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                            >
+                              <ArrowDown size={22} />
+                            </button>
+                            <div />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Flappy Bird tap instruction */}
+                      {selectedGame.id === "flappy" && !flappyGame.gameOver && (
+                        <div className="mt-3 text-center">
+                          <button
+                            onPointerDown={flappyGame.flap}
+                            className="w-full h-12 rounded-xl bg-white/[0.08] active:bg-white/[0.15] text-white/50 text-sm font-medium"
+                          >
+                            Tap to flap
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
           </div>

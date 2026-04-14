@@ -105,6 +105,25 @@ test.describe("Minigames Page (authenticated)", () => {
     // The logged-in user (just) should appear with 3 points (first place in snake = 3 pts)
     await expect(page.locator("text=3 pts")).toBeVisible();
   });
+
+  test("should open flappy bird game modal and start game", async ({
+    loggedInPage: page,
+  }) => {
+    await page.click('nav a:has-text("Games")');
+    await expect(page.locator("text=Flappy Bird")).toBeVisible();
+
+    // Click on Flappy Bird card
+    await page.locator("text=Flappy Bird").click();
+    await expect(page.locator("h2:has-text('Flappy Bird')")).toBeVisible();
+    await expect(page.locator("text=High Scores")).toBeVisible();
+    await expect(page.locator('button:has-text("Start Game")')).toBeVisible();
+
+    // Start the game
+    await page.click('button:has-text("Start Game")');
+    await expect(page.locator("text=Score:")).toBeVisible();
+    // Tap-to-flap button should be visible
+    await expect(page.locator('button:has-text("Tap to flap")')).toBeVisible();
+  });
 });
 
 baseTest.describe("Minigames Page (unauthenticated)", () => {

@@ -390,6 +390,7 @@ export default function Matches() {
               <button
                 onClick={() => setShowHelp(false)}
                 className="text-white/30 hover:text-white/60 transition-colors p-1"
+                data-testid="help-close"
               >
                 <X size={20} />
               </button>
