@@ -79,7 +79,7 @@ jobs:
 
       - name: Set Secrets
         run: |
-          secrets=(JWT_SECRET ADMIN_NAME)
+          secrets=(JWT_SECRET ADMIN_NAME USERS_JSON)
           for name in "${secrets[@]}"; do
             for env in preview production; do
               printf '%s' "${!name}" | pnpm exec wrangler pages secret put "$name" --project-name iglympics --env "$env"
@@ -90,6 +90,7 @@ jobs:
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          USERS_JSON: ${{ secrets.USERS_JSON }}
 
       - name: Build
         run: pnpm build

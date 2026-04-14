@@ -1,0 +1,16 @@
+[
+  { "name": "just", "password": "iglympics2024" },
+  { "name": "bob", "password": "CHANGE_ME" },
+  { "name": "alice", "password": "CHANGE_ME" },
+  { "name": "charlie", "password": "CHANGE_ME" },
+  { "name": "diana", "password": "CHANGE_ME" },
+  { "name": "edward", "password": "CHANGE_ME" },
+  { "name": "fiona", "password": "CHANGE_ME" },
+  { "name": "george", "password": "CHANGE_ME" },
+  { "name": "hannah", "password": "CHANGE_ME" },
+  { "name": "ivan", "password": "CHANGE_ME" },
+  { "name": "julia", "password": "CHANGE_ME" },
+  { "name": "kevin", "password": "CHANGE_ME" },
+  { "name": "laura", "password": "CHANGE_ME" },
+  { "name": "mike", "password": "CHANGE_ME" }
+]

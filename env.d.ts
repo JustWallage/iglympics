@@ -6,6 +6,7 @@ interface Env {
   JWT_SECRET: string;
   ADMIN_NAME: string;
   ALLOW_TEST_RESET?: string;
+  USERS_JSON?: string;
 }
 
 type CFEventContext = EventContext<Env, string, unknown>;

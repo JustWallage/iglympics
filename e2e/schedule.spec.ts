@@ -46,6 +46,9 @@ test.describe("Schedule", () => {
 baseTest.describe("Schedule (unauthenticated)", () => {
   baseTest("should show schedule page without login", async ({ page }) => {
     await page.goto("/schedule");
-    await baseExpect(page.locator("h1")).toHaveText("Schedule");
+    await page.click('button:has-text("Enter")');
+    await expect(
+      page.locator("h1", { hasText: "Schedule" }).first(),
+    ).toBeVisible();
   });
 });

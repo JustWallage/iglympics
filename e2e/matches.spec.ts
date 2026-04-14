@@ -94,7 +94,10 @@ test.describe("Matches Page", () => {
 baseTest.describe("Matches Page (unauthenticated)", () => {
   baseTest("should show matches page without login", async ({ page }) => {
     await page.goto("/matches");
-    await baseExpect(page.locator("h1")).toHaveText("Matches");
+    await page.click('button:has-text("Enter")');
+    await expect(
+      page.locator("h1", { hasText: "Matches" }).first(),
+    ).toBeVisible();
     // New Match button should not be visible
     await baseExpect(
       page.locator('button:has-text("New Match")'),

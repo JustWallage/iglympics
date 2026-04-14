@@ -1,12 +1,13 @@
 import { test as base, expect, Page } from "@playwright/test";
 
 async function loginViaModal(page: Page, name: string, password: string) {
+  await page.click('button:has-text("Enter")');
   await page.click('button:has-text("Login")');
-  await page.fill('#modal-name', name);
-  await page.fill('#modal-password', password);
+  await page.fill("#modal-name", name);
+  await page.fill("#modal-password", password);
   await page.click('button:has-text("Sign in")');
   // Wait for modal to close and user to be logged in
-  await expect(page.locator('#modal-name')).not.toBeVisible({ timeout: 5000 });
+  await expect(page.locator("#modal-name")).not.toBeVisible({ timeout: 5000 });
 }
 
 type Fixtures = {
@@ -20,6 +21,7 @@ export const test = base.extend<Fixtures>({
 
     // Go to scoreboard and login via modal
     await page.goto("/");
+    await page.click('button:has-text("Enter")');
     await loginViaModal(page, "just", "iglympics2024");
 
     await use(page);

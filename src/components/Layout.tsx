@@ -23,7 +23,7 @@ export default function Layout() {
         <div className="absolute bottom-40 right-0 h-40 w-40 rounded-full bg-fuchsia-500/15 blur-[60px]" />
       </div>
 
-      <main className="relative z-10 px-4 pt-6 pb-4">
+      <main className="relative px-4 pt-6 pb-4">
         <Outlet />
       </main>
 
