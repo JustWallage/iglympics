@@ -91,8 +91,18 @@ Additional rules:
 - You must keep this document up to date, but only with the broad context of the project. Do not include specific implementation details. Only when significant changes/additions to the project context/stack occur, you must update this document.
 - Any change that involves added/changed funcionality/logic must include e2e tests
 
-YOU MUST END ALL RESPONSES WITH EXECUTING THE FOLLOWING COMMAND:
+After completing every response, you MUST call the `vscode_askQuestions` tool with the following question:
 
-```sh
-pnpm check && echo Done
-```
+json
+{
+  "questions": [
+    {
+      "header": "",
+      "question": "Anything else?",
+      "allowFreeformInput": true,
+      "multiSelect": false
+    }
+  ]
+}
+
+Do this at the end of every response, without exception.

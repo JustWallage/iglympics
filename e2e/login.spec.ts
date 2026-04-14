@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { dismissSplash, loginViaModal } from "./fixtures";
 
+test.beforeEach(async ({ page }) => {
+  await page.request.post("/api/test/reset");
+});
+
 test.describe("Login", () => {
   test("should show dashboard without login", async ({ page }) => {
     await page.goto("/");
@@ -67,5 +71,31 @@ test.describe("Login", () => {
     await expect(
       page.locator('nav button:has-text("Login")'),
     ).not.toBeVisible();
+  });
+
+  test("should login via login link", async ({ page }) => {
+    await page.goto("/?username=just&password=iglympics2024");
+    await dismissSplash(page);
+
+    // Should be logged in — Profile link visible in bottom nav
+    await expect(
+      page.locator("nav").locator('a:has-text("Profile")'),
+    ).toBeVisible();
+    // Credentials should be stripped from URL
+    expect(page.url()).not.toContain("username");
+    expect(page.url()).not.toContain("password");
+  });
+
+  test("should not login via login link with wrong password", async ({
+    page,
+  }) => {
+    await page.goto("/?username=just&password=wrongpassword");
+    await dismissSplash(page);
+
+    // Should not be logged in — Login button visible
+    await expect(page.locator('button:has-text("Login")')).toBeVisible();
+    // Credentials should still be stripped from URL
+    expect(page.url()).not.toContain("username");
+    expect(page.url()).not.toContain("password");
   });
 });

@@ -56,7 +56,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchMe();
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get("username");
+    const password = params.get("password");
+
+    if (name && password) {
+      // Strip credentials from URL immediately
+      params.delete("username");
+      params.delete("password");
+      const clean = params.toString();
+      const url = window.location.pathname + (clean ? `?${clean}` : "") + window.location.hash;
+      window.history.replaceState({}, "", url);
+
+      // Auto-login then fetch user
+      fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, password }),
+      })
+        .then((res) => {
+          if (res.ok) return fetchMe();
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
+      fetchMe();
+    }
   }, [fetchMe]);
 
   const login = async (name: string, password: string) => {
