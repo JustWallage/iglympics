@@ -57,102 +57,102 @@ export default function Layout() {
           </div>
         )}
         <div className="border-t border-white/[0.08] bg-white/[0.04] backdrop-blur-xl">
-          <div className="flex items-center justify-around py-2">
+          <div className="flex items-center py-2">
             <Link
               to="/"
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+              className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
                 isActive("/") && !isActive("/profile") && !isActive("/admin") && !isActive("/matches") && !isActive("/chat") && !isActive("/scoreboard") && !isActive("/schedule")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
             >
               <Home size={22} />
-              <span className="text-[10px] font-medium">Home</span>
+              <span className="text-[10px] font-medium truncate max-w-full px-1">Home</span>
             </Link>
 
             <Link
               to="/scoreboard"
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+              className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
                 isActive("/scoreboard")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
             >
               <Trophy size={22} />
-              <span className="text-[10px] font-medium">Board</span>
+              <span className="text-[10px] font-medium truncate max-w-full px-1">Board</span>
             </Link>
 
             <Link
               to="/matches"
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+              className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
                 isActive("/matches")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
             >
               <Swords size={22} />
-              <span className="text-[10px] font-medium">Matches</span>
+              <span className="text-[10px] font-medium truncate max-w-full px-1">Matches</span>
             </Link>
 
             <Link
               to="/chat"
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+              className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
                 isActive("/chat")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
             >
               <MessageCircle size={22} />
-              <span className="text-[10px] font-medium">Chat</span>
+              <span className="text-[10px] font-medium truncate max-w-full px-1">Chat</span>
             </Link>
 
             <Link
               to="/schedule"
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+              className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
                 isActive("/schedule")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
             >
               <CalendarDays size={22} />
-              <span className="text-[10px] font-medium">Schedule</span>
+              <span className="text-[10px] font-medium truncate max-w-full px-1">Schedule</span>
             </Link>
 
             {user && (
               <Link
                 to={`/profile/${user.id}`}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+                className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
                   isActive("/profile")
                     ? "text-accent-light"
                     : "text-white/35 active:text-white/60"
                 }`}
               >
                 <User size={22} />
-                <span className="text-[10px] font-medium">Profile</span>
+                <span className="text-[10px] font-medium truncate max-w-full px-1">Profile</span>
               </Link>
             )}
 
             {isAdmin && (
               <Link
                 to="/admin/matches"
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+                className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
                   isActive("/admin")
                     ? "text-accent-light"
                     : "text-white/35 active:text-white/60"
                 }`}
               >
                 <Zap size={22} />
-                <span className="text-[10px] font-medium">Admin</span>
+                <span className="text-[10px] font-medium truncate max-w-full px-1">Admin</span>
               </Link>
             )}
 
             {!user && (
               <button
                 onClick={openLoginModal}
-                className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl text-accent-light transition-colors"
+                className="flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl text-accent-light transition-colors"
               >
                 <LogIn size={22} />
-                <span className="text-[10px] font-medium">Login</span>
+                <span className="text-[10px] font-medium truncate max-w-full px-1">Login</span>
               </button>
             )}
           </div>
