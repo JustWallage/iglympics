@@ -61,11 +61,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   // Broadcast via Durable Object if available
   if (context.env.SCOREBOARD_DO) {
-    const doId = context.env.SCOREBOARD_DO.idFromName("scoreboard");
+    const doId = context.env.SCOREBOARD_DO.idFromName("global");
     const stub = context.env.SCOREBOARD_DO.get(doId);
     await stub.fetch("https://do/broadcast", {
       method: "POST",
-      body: JSON.stringify({ type: "chat_message", data: message }),
+      body: JSON.stringify({ type: "chat_message", payload: message }),
     });
   }
 

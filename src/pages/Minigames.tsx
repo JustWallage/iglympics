@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useWebSocket } from "../context/WebSocketContext";
 import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -464,6 +465,7 @@ function FlappyBoard({
 
 export default function Minigames() {
   const { user } = useAuth();
+  const { subscribe } = useWebSocket();
 
   // Leaderboard state
   const { data, loading, mutate: fetchScores } = useCachedFetch<{
@@ -516,6 +518,12 @@ export default function Minigames() {
     const id = setTimeout(() => setGameOverReady(true), 1500);
     return () => clearTimeout(id);
   }, [isGameOverNow]);
+
+  // Live updates
+  useEffect(() => {
+    const unsub = subscribe("minigame_score", () => fetchScores());
+    return unsub;
+  }, [subscribe, fetchScores]);
 
   const medals = ["🥇", "🥈", "🥉"];
 

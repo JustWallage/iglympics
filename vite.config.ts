@@ -15,11 +15,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:8788",
-      "/ws": {
+      "/api/ws": {
         target: "ws://localhost:8788",
         ws: true,
       },
+      "/api": "http://localhost:8788",
     },
   },
 });

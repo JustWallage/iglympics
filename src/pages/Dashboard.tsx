@@ -49,7 +49,7 @@ export default function Dashboard() {
     useCachedFetch<{ messages: ChatMessage[] }>("/api/messages?limit=5");
   const { data: matchData, loading: matchLoading, mutate: mutateMatches } =
     useCachedFetch<{ matches: Match[] }>("/api/matches");
-  const { data: mgData } =
+  const { data: mgData, mutate: mutateMg } =
     useCachedFetch<{ global_leaderboard: MinigameLeaderEntry[] }>("/api/minigame-scores");
 
   const scores = scoreData?.scores ?? [];
@@ -65,12 +65,14 @@ export default function Dashboard() {
     });
     const unsub2 = subscribe("rating_updated", () => mutateScores());
     const unsub3 = subscribe("chat_message", () => mutateMessages());
+    const unsub4 = subscribe("minigame_score", () => mutateMg());
     return () => {
       unsub1();
       unsub2();
       unsub3();
+      unsub4();
     };
-  }, [subscribe, mutateScores, mutateMatches, mutateMessages]);
+  }, [subscribe, mutateScores, mutateMatches, mutateMessages, mutateMg]);
 
   if (loading) {
     return (

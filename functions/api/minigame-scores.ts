@@ -65,7 +65,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   return Response.json({
     global_leaderboard: globalLeaderboard,
-    game_scores: gameFilter ? { [gameFilter]: byGame[gameFilter] || [] } : byGame,
+    game_scores: gameFilter
+      ? { [gameFilter]: byGame[gameFilter] || [] }
+      : byGame,
   });
 };
 
@@ -93,6 +95,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   )
     .bind(currentUser.id, game, score)
     .run();
+
+  // Broadcast via Durable Object if available
+  if (context.env.SCOREBOARD_DO) {
+    const doId = context.env.SCOREBOARD_DO.idFromName("global");
+    const stub = context.env.SCOREBOARD_DO.get(doId);
+    await stub.fetch("https://do/broadcast", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "minigame_score",
+        payload: { userId: currentUser.id, game, score },
+      }),
+    });
+  }
 
   return Response.json({ ok: true, id: result.meta.last_row_id });
 };
