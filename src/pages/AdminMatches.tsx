@@ -3,7 +3,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import { X, Pencil, Trash2, Plus } from "lucide-react";
+import { X, Trash2, Plus } from "lucide-react";
 
 interface Activity {
   id: number;
@@ -38,6 +38,7 @@ export default function AdminMatches() {
   const [form, setForm] = useState(emptyActivity);
   const [activityMsg, setActivityMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -150,6 +151,7 @@ export default function AdminMatches() {
 
   const handleDelete = async (id: number) => {
     await fetch(`/api/activities/${id}`, { method: "DELETE" });
+    setDeleteId(null);
     await fetchActivities();
   };
 
@@ -229,7 +231,11 @@ export default function AdminMatches() {
         ) : (
           <div className="space-y-2">
             {activities.map((a) => (
-              <Card key={a.id} className="p-3">
+              <Card
+                key={a.id}
+                className="p-3 cursor-pointer hover:bg-white/[0.06] transition-colors"
+                onClick={() => openEdit(a)}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-white/90 truncate">
@@ -247,13 +253,10 @@ export default function AdminMatches() {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button
-                      onClick={() => openEdit(a)}
-                      className="p-2 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(a.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteId(a.id);
+                      }}
                       className="p-2 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     >
                       <Trash2 size={14} />
@@ -382,6 +385,43 @@ export default function AdminMatches() {
                     : "Create Activity"}
               </Button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteId !== null && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+          onClick={() => setDeleteId(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl border border-white/[0.1] bg-white/[0.06] backdrop-blur-xl p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-white/90 mb-2">
+              Delete Activity
+            </h2>
+            <p className="text-sm text-white/55 mb-6">
+              Are you sure? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                className="flex-1"
+                variant="secondary"
+                onClick={() => setDeleteId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                variant="danger"
+                data-testid="confirm-delete"
+                onClick={() => handleDelete(deleteId)}
+              >
+                Delete
+              </Button>
+            </div>
           </div>
         </div>
       )}
