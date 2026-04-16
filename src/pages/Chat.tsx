@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
 import { useMusicPlayer } from "../context/MusicContext";
+import { useCachedFetch } from "../lib/useCachedFetch";
 import { Send } from "lucide-react";
 
 interface Message {
@@ -17,33 +18,24 @@ export default function Chat() {
   const music = useMusicPlayer();
   const hasMiniPlayer = music.songs.length > 0;
   const { subscribe } = useWebSocket();
+  const { data, loading } = useCachedFetch<{ messages: Message[] }>("/api/messages?limit=50");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
 
+  // Sync cached data into local messages state
+  useEffect(() => {
+    if (data?.messages) {
+      setMessages(data.messages);
+    }
+  }, [data]);
+
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
-
-  const fetchMessages = useCallback(async () => {
-    try {
-      const res = await fetch("/api/messages?limit=50");
-      if (res.ok) {
-        const data = (await res.json()) as { messages: Message[] };
-        setMessages(data.messages);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchMessages();
-  }, [fetchMessages]);
 
   // Auto-scroll on new messages
   useEffect(() => {

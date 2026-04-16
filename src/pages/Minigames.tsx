@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -465,39 +466,18 @@ export default function Minigames() {
   const { user } = useAuth();
 
   // Leaderboard state
-  const [globalLeaderboard, setGlobalLeaderboard] = useState<
-    LeaderboardEntry[]
-  >([]);
-  const [gameScores, setGameScores] = useState<
-    Record<string, GameScore[]>
-  >({});
+  const { data, loading, mutate: fetchScores } = useCachedFetch<{
+    global_leaderboard: LeaderboardEntry[];
+    game_scores: Record<string, GameScore[]>;
+  }>("/api/minigame-scores");
+  const globalLeaderboard = data?.global_leaderboard ?? [];
+  const gameScores = data?.game_scores ?? {};
   const [leaderboardExpanded, setLeaderboardExpanded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   // Game modal
   const [selectedGame, setSelectedGame] = useState<GameDef | null>(null);
   const [playing, setPlaying] = useState(false);
-
-  const fetchScores = useCallback(async () => {
-    try {
-      const res = await fetch("/api/minigame-scores");
-      if (res.ok) {
-        const data = (await res.json()) as {
-          global_leaderboard: LeaderboardEntry[];
-          game_scores: Record<string, GameScore[]>;
-        };
-        setGlobalLeaderboard(data.global_leaderboard);
-        setGameScores(data.game_scores);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchScores();
-  }, [fetchScores]);
 
   const handleGameOver = useCallback(
     async (score: number) => {

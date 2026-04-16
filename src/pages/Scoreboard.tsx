@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocket } from "../context/WebSocketContext";
+import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card } from "../components/ui/card";
 
 interface PlayerScore {
@@ -17,35 +18,19 @@ interface PlayerScore {
 }
 
 export default function Scoreboard() {
-  const [scores, setScores] = useState<PlayerScore[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, mutate } = useCachedFetch<{ scores: PlayerScore[] }>("/api/scoreboard");
+  const scores = data?.scores ?? [];
   const { subscribe } = useWebSocket();
   const navigate = useNavigate();
 
-  const fetchScores = useCallback(async () => {
-    try {
-      const res = await fetch("/api/scoreboard");
-      if (res.ok) {
-        const data = await res.json();
-        setScores((data as { scores: PlayerScore[] }).scores);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchScores();
-  }, [fetchScores]);
-
-  useEffect(() => {
-    const unsub1 = subscribe("match_created", () => fetchScores());
-    const unsub2 = subscribe("rating_updated", () => fetchScores());
+    const unsub1 = subscribe("match_created", () => mutate());
+    const unsub2 = subscribe("rating_updated", () => mutate());
     return () => {
       unsub1();
       unsub2();
     };
-  }, [subscribe, fetchScores]);
+  }, [subscribe, mutate]);
 
   if (loading) {
     return (

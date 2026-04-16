@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
+import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -41,35 +42,20 @@ export default function Profile() {
   const { user, logout, openLoginModal } = useAuth();
   const { subscribe } = useWebSocket();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [matches, setMatches] = useState<MatchHistory[]>([]);
+
+  const profileUrl = userId ? `/api/users/${userId}` : null;
+  const { data, loading, mutate: fetchProfile } = useCachedFetch<{
+    user: UserProfile;
+    ratings: Rating[];
+    matches: MatchHistory[];
+  }>(profileUrl);
+  const profile = data?.user ?? null;
+  const ratings = data?.ratings ?? [];
+  const matches = data?.matches ?? [];
+
   const [newRating, setNewRating] = useState(0);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/users/${userId}`);
-      if (res.ok) {
-        const data = (await res.json()) as {
-          user: UserProfile;
-          ratings: Rating[];
-          matches: MatchHistory[];
-        };
-        setProfile(data.user);
-        setRatings(data.ratings);
-        setMatches(data.matches);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
 
   useEffect(() => {
     const unsub1 = subscribe("match_created", () => fetchProfile());

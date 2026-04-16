@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
+import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -22,6 +23,12 @@ interface Match {
   my_vote: string | null;
 }
 
+interface MatchesResponse {
+  matches: Match[];
+  confirm_threshold: number;
+  reject_threshold: number;
+}
+
 interface User {
   id: number;
   name: string;
@@ -35,12 +42,13 @@ interface TeamEntry {
 export default function Matches() {
   const { user, openLoginModal } = useAuth();
   const { subscribe } = useWebSocket();
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, mutate: fetchMatches } = useCachedFetch<MatchesResponse>("/api/matches");
+  const matches = data?.matches ?? [];
+  const confirmThreshold = data?.confirm_threshold ?? 4;
+  const rejectThreshold = data?.reject_threshold ?? 8;
+
   const [selected, setSelected] = useState<Match | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [confirmThreshold, setConfirmThreshold] = useState(4);
-  const [rejectThreshold, setRejectThreshold] = useState(8);
 
   // Create match form state
   const [users, setUsers] = useState<User[]>([]);
@@ -50,28 +58,6 @@ export default function Matches() {
   const [submitting, setSubmitting] = useState(false);
   const [createMessage, setCreateMessage] = useState("");
   const [showHelp, setShowHelp] = useState(false);
-
-  const fetchMatches = useCallback(async () => {
-    try {
-      const res = await fetch("/api/matches");
-      if (res.ok) {
-        const data = await res.json() as {
-          matches: Match[];
-          confirm_threshold: number;
-          reject_threshold: number;
-        };
-        setMatches(data.matches);
-        setConfirmThreshold(data.confirm_threshold);
-        setRejectThreshold(data.reject_threshold);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchMatches();
-  }, [fetchMatches]);
 
   useEffect(() => {
     const unsub = subscribe("match_created", () => fetchMatches());

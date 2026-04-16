@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
+import { useCachedFetch } from "../lib/useCachedFetch";
 
 interface Activity {
   id: number;
@@ -15,25 +16,9 @@ interface Activity {
 }
 
 export default function Schedule() {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading } = useCachedFetch<{ activities: Activity[] }>("/api/activities");
+  const activities = data?.activities ?? [];
   const upcomingRef = useRef<HTMLDivElement>(null);
-
-  const fetchActivities = useCallback(async () => {
-    try {
-      const res = await fetch("/api/activities");
-      if (res.ok) {
-        const data = (await res.json()) as { activities: Activity[] };
-        setActivities(data.activities);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
 
   // Auto-scroll to upcoming section after activities load
   useEffect(() => {

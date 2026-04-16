@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocket } from "../context/WebSocketContext";
+import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import MusicPlayer from "../components/MusicPlayer";
@@ -41,60 +42,35 @@ interface Match {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { subscribe } = useWebSocket();
-  const [scores, setScores] = useState<PlayerScore[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [lastMatch, setLastMatch] = useState<Match | null>(null);
-  const [minigameTop, setMinigameTop] = useState<MinigameLeaderEntry[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchAll = useCallback(async () => {
-    try {
-      const [scoreRes, msgRes, matchRes, mgRes] = await Promise.all([
-        fetch("/api/scoreboard"),
-        fetch("/api/messages?limit=5"),
-        fetch("/api/matches"),
-        fetch("/api/minigame-scores"),
-      ]);
+  const { data: scoreData, loading: scoreLoading, mutate: mutateScores } =
+    useCachedFetch<{ scores: PlayerScore[] }>("/api/scoreboard");
+  const { data: msgData, loading: msgLoading, mutate: mutateMessages } =
+    useCachedFetch<{ messages: ChatMessage[] }>("/api/messages?limit=5");
+  const { data: matchData, loading: matchLoading, mutate: mutateMatches } =
+    useCachedFetch<{ matches: Match[] }>("/api/matches");
+  const { data: mgData } =
+    useCachedFetch<{ global_leaderboard: MinigameLeaderEntry[] }>("/api/minigame-scores");
 
-      if (scoreRes.ok) {
-        const data = (await scoreRes.json()) as { scores: PlayerScore[] };
-        setScores(data.scores);
-      }
-      if (msgRes.ok) {
-        const data = (await msgRes.json()) as { messages: ChatMessage[] };
-        setMessages(data.messages);
-      }
-      if (matchRes.ok) {
-        const data = (await matchRes.json()) as { matches: Match[] };
-        if (data.matches.length > 0) {
-          setLastMatch(data.matches[0]);
-        }
-      }
-      if (mgRes.ok) {
-        const data = (await mgRes.json()) as {
-          global_leaderboard: MinigameLeaderEntry[];
-        };
-        setMinigameTop(data.global_leaderboard.slice(0, 3));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const scores = scoreData?.scores ?? [];
+  const messages = msgData?.messages ?? [];
+  const lastMatch = matchData?.matches?.[0] ?? null;
+  const minigameTop = (mgData?.global_leaderboard ?? []).slice(0, 3);
+  const loading = scoreLoading || msgLoading || matchLoading;
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  useEffect(() => {
-    const unsub1 = subscribe("match_created", () => fetchAll());
-    const unsub2 = subscribe("rating_updated", () => fetchAll());
-    const unsub3 = subscribe("chat_message", () => fetchAll());
+    const unsub1 = subscribe("match_created", () => {
+      mutateScores();
+      mutateMatches();
+    });
+    const unsub2 = subscribe("rating_updated", () => mutateScores());
+    const unsub3 = subscribe("chat_message", () => mutateMessages());
     return () => {
       unsub1();
       unsub2();
       unsub3();
     };
-  }, [subscribe, fetchAll]);
+  }, [subscribe, mutateScores, mutateMatches, mutateMessages]);
 
   if (loading) {
     return (
