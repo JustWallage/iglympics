@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
@@ -13,6 +13,53 @@ interface Activity {
   image_url: string | null;
   release_at: string | null;
   released: boolean;
+}
+
+function Countdown({ target }: { target: string }) {
+  const [remaining, setRemaining] = useState(() => {
+    const diff = new Date(target).getTime() - Date.now();
+    return Math.max(0, Math.floor(diff / 1000));
+  });
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const diff = new Date(target).getTime() - Date.now();
+      setRemaining(Math.max(0, Math.floor(diff / 1000)));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [target]);
+
+  if (remaining <= 0) return null;
+
+  const days = Math.floor(remaining / 86400);
+  const hours = Math.floor((remaining % 86400) / 3600);
+  const minutes = Math.floor((remaining % 3600) / 60);
+  const seconds = remaining % 60;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div className="flex gap-2 mt-2" data-testid="countdown">
+      {days > 0 && (
+        <div className="flex flex-col items-center">
+          <span className="text-lg font-bold text-white/70 tabular-nums">{days}</span>
+          <span className="text-[10px] text-white/30 uppercase">days</span>
+        </div>
+      )}
+      <div className="flex flex-col items-center">
+        <span className="text-lg font-bold text-white/70 tabular-nums">{pad(hours)}</span>
+        <span className="text-[10px] text-white/30 uppercase">hrs</span>
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-lg font-bold text-white/70 tabular-nums">{pad(minutes)}</span>
+        <span className="text-[10px] text-white/30 uppercase">min</span>
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-lg font-bold text-white/70 tabular-nums">{pad(seconds)}</span>
+        <span className="text-[10px] text-white/30 uppercase">sec</span>
+      </div>
+    </div>
+  );
 }
 
 export default function Schedule() {
@@ -114,6 +161,7 @@ export default function Schedule() {
           <span className="text-sm font-medium text-white/40">
             Coming soon
           </span>
+          {a.release_at && <Countdown target={a.release_at} />}
         </div>
       </Card>
     );

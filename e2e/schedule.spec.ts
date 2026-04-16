@@ -40,6 +40,15 @@ test.describe("Schedule", () => {
     // Should show "Coming soon" but not the title
     await expect(page.locator("text=Coming soon")).toBeVisible();
     await expect(page.locator("text=Secret Event")).not.toBeVisible();
+
+    // Should show countdown timer
+    await expect(page.getByTestId("countdown")).toBeVisible();
+    // Countdown should have time segments (days, hrs, min, sec)
+    const countdown = page.getByTestId("countdown");
+    await expect(countdown.locator("text=days")).toBeVisible();
+    await expect(countdown.locator("text=hrs")).toBeVisible();
+    await expect(countdown.locator("text=min")).toBeVisible();
+    await expect(countdown.locator("text=sec")).toBeVisible();
   });
 });
 
