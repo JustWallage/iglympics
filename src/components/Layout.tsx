@@ -14,8 +14,10 @@ export default function Layout() {
       ? location.pathname === "/"
       : location.pathname.startsWith(path);
 
+  const showMiniPlayer = !isHome && music.songs.length > 0;
+
   return (
-    <div className="min-h-dvh relative bg-bg pb-20 overflow-hidden">
+    <div className={`min-h-dvh relative bg-bg ${showMiniPlayer ? "pb-32" : "pb-20"} overflow-hidden`}>
       {/* Background decorative blobs — glass cards float in front */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-violet-500/20 blur-[80px]" />
@@ -30,7 +32,7 @@ export default function Layout() {
       {/* ── Bottom navigation (glassmorphic) ────────────────────────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40">
         {/* Mini player - shown when not on dashboard and music has songs */}
-        {!isHome && music.songs.length > 0 && (
+        {showMiniPlayer && (
           <div className="border-t border-white/[0.06] bg-white/[0.03] backdrop-blur-xl px-4 py-2">
             <div className="flex items-center gap-3">
               <button
