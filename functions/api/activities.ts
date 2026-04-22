@@ -14,12 +14,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     "SELECT * FROM activities ORDER BY date ASC, time ASC",
   ).all<Activity>();
 
+  const user = (context.data as { user?: { id: number; name: string } }).user;
+  const isAdmin = user && user.name === context.env.ADMIN_NAME;
   const now = new Date().toISOString().replace("T", " ").slice(0, 19);
 
   const activities = results.map((a) => {
     const released = !a.release_at || a.release_at <= now;
-    if (released) {
-      return { ...a, released: true };
+    if (released || isAdmin) {
+      return { ...a, released };
     }
     // Unreleased: only return image_url (for blurred preview) and id
     return {
