@@ -29,7 +29,9 @@ function Countdown({ target, onExpired }: { target: string; onExpired?: () => vo
       setRemaining(secs);
       if (secs <= 0 && !expiredRef.current) {
         expiredRef.current = true;
-        onExpired?.();
+        // Delay refetch slightly so the server's second-precision clock
+        // has also passed the release_at threshold
+        setTimeout(() => onExpired?.(), 1500);
       }
     }, 1000);
     return () => clearInterval(id);

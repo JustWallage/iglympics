@@ -109,6 +109,33 @@ test.describe("Admin Activity Deletion", () => {
       page.locator('input[placeholder="Activity title"]'),
     ).toHaveValue("Test Activity");
   });
+
+  test("should edit an activity and persist the changes", async ({
+    loggedInPage: page,
+  }) => {
+    await createActivity(page);
+
+    // Click the activity card to open edit modal
+    await page.locator("text=Test Activity").click();
+    await expect(
+      page.locator('button:has-text("Update Activity")'),
+    ).toBeVisible();
+
+    // Change the title
+    await page.fill('input[placeholder="Activity title"]', "Updated Activity");
+    await page.click('button:has-text("Update Activity")');
+
+    // Modal should close and updated title should be visible
+    await expect(
+      page.locator('button:has-text("Update Activity")'),
+    ).not.toBeVisible();
+    await expect(page.locator("text=Updated Activity")).toBeVisible();
+    await expect(page.locator("text=Test Activity")).not.toBeVisible();
+
+    // Navigate to schedule and verify the update is reflected
+    await page.click('nav a:has-text("Schedule")');
+    await expect(page.locator("text=Updated Activity")).toBeVisible();
+  });
 });
 
 baseTest.describe("Admin access control", () => {
