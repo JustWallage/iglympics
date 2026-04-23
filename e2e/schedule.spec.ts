@@ -55,10 +55,11 @@ test.describe("Schedule", () => {
     loggedInPage: page,
   }) => {
     // Create activity with release_at a few seconds from now via API
-    const releaseAt = new Date(Date.now() + 5000)
-      .toISOString()
-      .replace("T", " ")
-      .slice(0, 19);
+    // Use local-time format (matching datetime-local input) so the
+    // backend's Date parse treats it as local time consistently.
+    const d = new Date(Date.now() + 5000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const releaseAt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     const response = await page.request.post("/api/activities", {
       data: {
         title: "Surprise Party",

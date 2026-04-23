@@ -16,10 +16,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   const user = (context.data as { user?: { id: number; name: string } }).user;
   const isAdmin = user && user.name === context.env.ADMIN_NAME;
-  const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const now = Date.now();
 
   const activities = results.map((a) => {
-    const released = !a.release_at || a.release_at <= now;
+    const released =
+      !a.release_at ||
+      new Date(a.release_at.replace(" ", "T")).getTime() <= now;
     if (released || isAdmin) {
       return { ...a, released };
     }

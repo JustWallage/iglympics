@@ -84,25 +84,26 @@ Custom JWT-based auth with D1-stored users. Passwords hashed via WebCrypto API (
 - `JWT_SECRET` — Secret for signing JWTs
 - `ADMIN_NAME` — Name of the admin user
 
-Your goal is to get enough context from the user before implementation, nothing can be still unclear. If anything is unclear or yet undecided you must use the `askQuestions` tool to confirm the missing pieces.
+Personality: Don't flatter me. Be helpful but very honest. Don't agree with mistakes. Call out potential misses using ❗️.
 
-Additional rules:
-
-- You must keep this document up to date, but only with the broad context of the project. Do not include specific implementation details. Only when significant changes/additions to the project context/stack occur, you must update this document.
-- Any change that involves added/changed funcionality/logic must include e2e tests
+Rules:
+First get enough context from the user before implementation, nothing can be unclear. You must use the `askQuestions` tool until all missing info is clear and all decisions are locked in.
+Focus on readability. Short simple solution > verbosity. If in doubt about a code decision => use the `askQuestions` tool.
+Barely add comments, unless crucial for understanding, preferably inline
 
 After completing every response, you MUST call the `vscode_askQuestions` tool with the following question:
 
-json
+```json
 {
-"questions": [
-{
-"header": "",
-"question": "Anything else?",
-"allowFreeformInput": true,
-"multiSelect": false
+  "questions": [
+    {
+      "header": "",
+      "question": "Anything else?",
+      "allowFreeformInput": true,
+      "multiSelect": false
+    }
+  ]
 }
-]
-}
+```
 
 Do this at the end of every response, without exception.
