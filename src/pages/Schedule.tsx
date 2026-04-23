@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
@@ -15,19 +15,27 @@ interface Activity {
   released: boolean;
 }
 
-function Countdown({ target }: { target: string }) {
+function Countdown({ target, onExpired }: { target: string; onExpired?: () => void }) {
   const [remaining, setRemaining] = useState(() => {
     const diff = new Date(target).getTime() - Date.now();
     return Math.max(0, Math.floor(diff / 1000));
   });
+  const expiredRef = useRef(false);
 
   useEffect(() => {
     const id = setInterval(() => {
       const diff = new Date(target).getTime() - Date.now();
-      setRemaining(Math.max(0, Math.floor(diff / 1000)));
+      const secs = Math.max(0, Math.floor(diff / 1000));
+      setRemaining(secs);
+      if (secs <= 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        // Delay refetch slightly so the server's second-precision clock
+        // has also passed the release_at threshold
+        setTimeout(() => onExpired?.(), 1500);
+      }
     }, 1000);
     return () => clearInterval(id);
-  }, [target]);
+  }, [target, onExpired]);
 
   if (remaining <= 0) return null;
 
@@ -63,9 +71,13 @@ function Countdown({ target }: { target: string }) {
 }
 
 export default function Schedule() {
-  const { data, loading } = useCachedFetch<{ activities: Activity[] }>("/api/activities");
+  const { data, loading, mutate } = useCachedFetch<{ activities: Activity[] }>("/api/activities");
   const activities = data?.activities ?? [];
   const upcomingRef = useRef<HTMLDivElement>(null);
+
+  const handleCountdownExpired = useCallback(() => {
+    mutate();
+  }, [mutate]);
 
   // Auto-scroll to upcoming section after activities load
   useEffect(() => {
@@ -161,7 +173,7 @@ export default function Schedule() {
           <span className="text-sm font-medium text-white/40">
             Coming soon
           </span>
-          {a.release_at && <Countdown target={a.release_at} />}
+          {a.release_at && <Countdown target={a.release_at} onExpired={handleCountdownExpired} />}
         </div>
       </Card>
     );

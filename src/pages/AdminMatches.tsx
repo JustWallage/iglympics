@@ -99,7 +99,7 @@ export default function AdminMatches() {
   const openEdit = (a: Activity) => {
     setEditingId(a.id);
     setForm({
-      title: a.title,
+      title: a.title || "",
       date: a.date || "",
       time: a.time || "",
       description: a.description || "",
@@ -139,11 +139,14 @@ export default function AdminMatches() {
         setShowForm(false);
         await fetchActivities();
       } else {
-        const err = await res.json();
+        const err = await res.json().catch(() => null);
         setActivityMsg(
-          (err as { error?: string }).error || "Failed to save activity",
+          (err as { error?: string } | null)?.error ||
+            "Failed to save activity",
         );
       }
+    } catch {
+      setActivityMsg("Failed to save activity");
     } finally {
       setSubmitting(false);
     }

@@ -50,6 +50,39 @@ test.describe("Schedule", () => {
     await expect(countdown.locator("text=min")).toBeVisible();
     await expect(countdown.locator("text=sec")).toBeVisible();
   });
+
+  test("activity auto-unblurs when countdown expires", async ({
+    loggedInPage: page,
+  }) => {
+    // Create activity with release_at a few seconds from now via API
+    const releaseAt = new Date(Date.now() + 5000)
+      .toISOString()
+      .replace("T", " ")
+      .slice(0, 19);
+    const response = await page.request.post("/api/activities", {
+      data: {
+        title: "Surprise Party",
+        date: "2025-08-01",
+        time: "18:00",
+        release_at: releaseAt,
+      },
+    });
+    expect(response.ok()).toBeTruthy();
+
+    // Navigate to schedule page
+    await page.click('nav a:has-text("Schedule")');
+
+    // Should initially show blurred "Coming soon" card
+    await expect(page.locator("text=Coming soon")).toBeVisible();
+    await expect(page.locator("text=Surprise Party")).not.toBeVisible();
+
+    // Wait for the countdown to expire and the activity to auto-unblur
+    // (release in ~5s + 1.5s delay for refetch = ~6.5s, use 15s timeout for safety)
+    await expect(page.locator("text=Surprise Party")).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.locator("text=Coming soon")).not.toBeVisible();
+  });
 });
 
 baseTest.describe("Schedule (unauthenticated)", () => {
