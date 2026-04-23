@@ -11,20 +11,20 @@ interface Activity {
   time: string | null;
   description: string | null;
   image_url: string | null;
-  release_at: string | null;
+  release_at: number | null;
   released: boolean;
 }
 
-function Countdown({ target, onExpired }: { target: string; onExpired?: () => void }) {
+function Countdown({ target, onExpired }: { target: number; onExpired?: () => void }) {
   const [remaining, setRemaining] = useState(() => {
-    const diff = new Date(target).getTime() - Date.now();
+    const diff = target - Date.now();
     return Math.max(0, Math.floor(diff / 1000));
   });
   const expiredRef = useRef(false);
 
   useEffect(() => {
     const id = setInterval(() => {
-      const diff = new Date(target).getTime() - Date.now();
+      const diff = target - Date.now();
       const secs = Math.max(0, Math.floor(diff / 1000));
       setRemaining(secs);
       if (secs <= 0 && !expiredRef.current) {

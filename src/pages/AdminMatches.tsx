@@ -12,7 +12,7 @@ interface Activity {
   time: string | null;
   description: string | null;
   image_url: string | null;
-  release_at: string | null;
+  release_at: number | null;
 }
 
 const emptyActivity = {
@@ -96,6 +96,12 @@ export default function AdminMatches() {
     setShowForm(true);
   };
 
+  const epochToLocal = (epoch: number) => {
+    const d = new Date(epoch);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const openEdit = (a: Activity) => {
     setEditingId(a.id);
     setForm({
@@ -104,7 +110,7 @@ export default function AdminMatches() {
       time: a.time || "",
       description: a.description || "",
       image_url: a.image_url || "",
-      release_at: a.release_at || "",
+      release_at: a.release_at ? epochToLocal(a.release_at) : "",
     });
     setActivityMsg("");
     setShowForm(true);
@@ -121,7 +127,7 @@ export default function AdminMatches() {
       time: form.time || null,
       description: form.description || null,
       image_url: form.image_url || null,
-      release_at: form.release_at || null,
+      release_at: form.release_at ? new Date(form.release_at).getTime() : null,
     };
 
     try {
@@ -249,7 +255,7 @@ export default function AdminMatches() {
                       {a.time && ` · ${a.time}`}
                       {a.release_at && (
                         <span className="text-accent-light ml-2">
-                          Release: {a.release_at}
+                          Release: {new Date(a.release_at).toLocaleString()}
                         </span>
                       )}
                     </div>

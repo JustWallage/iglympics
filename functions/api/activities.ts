@@ -5,7 +5,7 @@ interface Activity {
   time: string | null;
   description: string | null;
   image_url: string | null;
-  release_at: string | null;
+  release_at: number | null;
   created_at: string;
 }
 
@@ -19,11 +19,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const now = Date.now();
 
   const activities = results.map((a) => {
-    const released =
-      !a.release_at ||
-      new Date(a.release_at.replace(" ", "T")).getTime() <= now;
+    const releaseAt = a.release_at ? Number(a.release_at) || null : null;
+    const released = !releaseAt || releaseAt <= now;
     if (released || isAdmin) {
-      return { ...a, released };
+      return { ...a, release_at: releaseAt, released };
     }
     // Unreleased: only return image_url (for blurred preview) and id
     return {
@@ -33,7 +32,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       time: null,
       description: null,
       image_url: a.image_url,
-      release_at: a.release_at,
+      release_at: releaseAt,
       created_at: a.created_at,
       released: false,
     };
@@ -54,7 +53,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     time?: string;
     description?: string;
     image_url?: string;
-    release_at?: string;
+    release_at?: number;
   };
 
   if (!body.title?.trim()) {

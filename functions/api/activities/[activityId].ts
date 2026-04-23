@@ -14,7 +14,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     time?: string;
     description?: string;
     image_url?: string;
-    release_at?: string;
+    release_at?: number;
   };
 
   if (!body.title?.trim()) {
