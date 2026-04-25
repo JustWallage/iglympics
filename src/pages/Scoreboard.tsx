@@ -43,7 +43,8 @@ export default function Scoreboard() {
       <h1 className="text-xl font-bold text-white/90 mb-4">Scoreboard</h1>
 
       <Card className="p-0 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[320px]">
           <thead>
             <tr className="border-b border-white/[0.06]">
               <th className="text-left px-4 py-3 text-xs font-medium text-white/35">
@@ -105,7 +106,8 @@ export default function Scoreboard() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </Card>
     </div>
   );
