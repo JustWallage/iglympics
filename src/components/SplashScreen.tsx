@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useMusicPlayer } from "../context/MusicContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function SplashScreen({ onEnter }: { onEnter: () => void }) {
   const music = useMusicPlayer();
+  const { user } = useAuth();
   const [exiting, setExiting] = useState(false);
 
   const handleEnter = () => {
@@ -29,6 +31,11 @@ export default function SplashScreen({ onEnter }: { onEnter: () => void }) {
           Iglympics
         </h1>
         <p className="text-white/40 text-sm mb-10">Let the games begin</p>
+        {user && (
+          <p className="text-white/60 text-base font-medium mb-10 -mt-8">
+            Welcome back, {user.name}!
+          </p>
+        )}
         <button
           onClick={handleEnter}
           className="h-14 px-10 rounded-2xl bg-accent text-white font-semibold text-lg shadow-[0_0_30px_var(--color-accent-glow)] active:scale-95 transition-transform"
