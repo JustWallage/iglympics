@@ -1,3 +1,5 @@
+import { isAdmin } from "../_lib/auth";
+
 interface UserData {
   id: number;
   name: string;
@@ -161,7 +163,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }>();
 
   // Get current user's votes (if authenticated)
-  let userVotes = new Map<number, string>();
+  const userVotes = new Map<number, string>();
   if (currentUser) {
     const votes = await context.env.DB.prepare(
       `SELECT match_id, vote FROM match_votes WHERE user_id = ? AND match_id IN (${placeholders})`,
@@ -210,7 +212,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     .filter((m) => {
       if (
         m.status === "rejected" &&
-        currentUser?.name !== context.env.ADMIN_NAME
+        !isAdmin(currentUser?.name ?? "", context.env.ADMIN_NAMES)
       ) {
         return false;
       }

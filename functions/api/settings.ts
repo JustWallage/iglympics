@@ -1,3 +1,5 @@
+import { isAdmin } from "../_lib/auth";
+
 interface UserData {
   id: number;
   name: string;
@@ -22,7 +24,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const currentUser = (context.data as { user: UserData }).user;
 
-  if (currentUser.name !== context.env.ADMIN_NAME) {
+  if (!isAdmin(currentUser.name, context.env.ADMIN_NAMES)) {
     return Response.json({ error: "Forbidden: admin only" }, { status: 403 });
   }
 

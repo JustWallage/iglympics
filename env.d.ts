@@ -4,7 +4,7 @@ interface Env {
   DB: D1Database;
   SCOREBOARD_DO?: DurableObjectNamespace;
   JWT_SECRET: string;
-  ADMIN_NAME: string;
+  ADMIN_NAMES: string;
   ALLOW_TEST_RESET?: string;
   USERS_JSON?: string;
 }

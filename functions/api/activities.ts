@@ -1,3 +1,5 @@
+import { isAdmin } from "../_lib/auth";
+
 interface Activity {
   id: number;
   title: string;
@@ -15,13 +17,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   ).all<Activity>();
 
   const user = (context.data as { user?: { id: number; name: string } }).user;
-  const isAdmin = user && user.name === context.env.ADMIN_NAME;
+  const userIsAdmin = user && isAdmin(user.name, context.env.ADMIN_NAMES);
   const now = Date.now();
 
   const activities = results.map((a) => {
     const releaseAt = a.release_at ? Number(a.release_at) || null : null;
     const released = !releaseAt || releaseAt <= now;
-    if (released || isAdmin) {
+    if (released || userIsAdmin) {
       return { ...a, release_at: releaseAt, released };
     }
     // Unreleased: only return image_url (for blurred preview) and id
@@ -43,7 +45,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const user = (context.data as { user?: { id: number; name: string } }).user;
-  if (!user || user.name !== context.env.ADMIN_NAME) {
+  if (!user || !isAdmin(user.name, context.env.ADMIN_NAMES)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

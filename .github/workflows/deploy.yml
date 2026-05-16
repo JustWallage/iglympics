@@ -80,7 +80,7 @@ jobs:
       - name: Set Secrets
         run: |
           # Shared secrets for both environments
-          for name in JWT_SECRET ADMIN_NAME; do
+          for name in JWT_SECRET ADMIN_NAMES; do
             for env in preview production; do
               printf '%s' "${!name}" | pnpm exec wrangler pages secret put "$name" --project-name iglympics --env "$env"
             done
@@ -92,7 +92,7 @@ jobs:
           printf 'true' | pnpm exec wrangler pages secret put ALLOW_TEST_RESET --project-name iglympics --env preview
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          ADMIN_NAMES: ${{ secrets.ADMIN_NAMES }}
           USERS_JSON: ${{ secrets.USERS_JSON }}
           USERS_JSON_TEST: ${{ secrets.USERS_JSON_TEST }}
 

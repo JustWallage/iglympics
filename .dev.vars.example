@@ -1,2 +1,2 @@
 JWT_SECRET=dev-secret-change-in-production
-ADMIN_NAME=just
+ADMIN_NAMES=just

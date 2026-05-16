@@ -1,6 +1,8 @@
+import { isAdmin } from "../../_lib/auth";
+
 export const onRequestPut: PagesFunction<Env> = async (context) => {
   const user = (context.data as { user?: { id: number; name: string } }).user;
-  if (!user || user.name !== context.env.ADMIN_NAME) {
+  if (!user || !isAdmin(user.name, context.env.ADMIN_NAMES)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -41,7 +43,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
 export const onRequestDelete: PagesFunction<Env> = async (context) => {
   const user = (context.data as { user?: { id: number; name: string } }).user;
-  if (!user || user.name !== context.env.ADMIN_NAME) {
+  if (!user || !isAdmin(user.name, context.env.ADMIN_NAMES)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

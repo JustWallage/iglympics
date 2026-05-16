@@ -141,6 +141,13 @@ function bytesToHex(bytes: Uint8Array): string {
     .join("");
 }
 
+export function isAdmin(name: string, adminNames: string): boolean {
+  return adminNames
+    .split(",")
+    .map((n) => n.trim())
+    .includes(name);
+}
+
 function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {

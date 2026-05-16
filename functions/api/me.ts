@@ -1,3 +1,5 @@
+import { isAdmin } from "../_lib/auth";
+
 interface UserData {
   id: number;
   name: string;
@@ -8,6 +10,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   return Response.json({
     user: { id: user.id, name: user.name },
-    isAdmin: user.name === context.env.ADMIN_NAME,
+    isAdmin: isAdmin(user.name, context.env.ADMIN_NAMES),
   });
 };
