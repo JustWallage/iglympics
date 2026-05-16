@@ -12,6 +12,7 @@ interface Activity {
   description: string | null;
   image_url: string | null;
   link_url: string | null;
+  hint: string | null;
   release_at: number | null;
   released: boolean;
 }
@@ -182,9 +183,11 @@ export default function Schedule() {
         )}
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
           <Lock size={24} className="text-white/30" />
-          <span className="text-sm font-medium text-white/40">
-            Coming soon
-          </span>
+          {a.hint ? (
+            <span className="text-sm font-medium text-white/60 px-4 text-center">{a.hint}</span>
+          ) : (
+            <span className="text-sm font-medium text-white/40">Coming soon</span>
+          )}
           {a.release_at && <Countdown target={a.release_at} onExpired={handleCountdownExpired} />}
         </div>
       </Card>

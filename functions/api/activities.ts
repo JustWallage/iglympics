@@ -9,6 +9,7 @@ interface Activity {
   image_url: string | null;
   release_at: number | null;
   link_url: string | null;
+  hint: string | null;
   created_at: string;
 }
 
@@ -27,7 +28,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     if (released || userIsAdmin) {
       return { ...a, release_at: releaseAt, released };
     }
-    // Unreleased: only return image_url (for blurred preview) and id
+    // Unreleased: only return image_url and hint (for blurred preview) and id
     return {
       id: a.id,
       title: null,
@@ -35,6 +36,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       time: null,
       description: null,
       image_url: a.image_url,
+      hint: a.hint,
       release_at: releaseAt,
       created_at: a.created_at,
       released: false,
@@ -58,6 +60,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     image_url?: string;
     release_at?: number;
     link_url?: string;
+    hint?: string;
   };
 
   if (!body.title?.trim()) {
@@ -65,8 +68,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   const result = await context.env.DB.prepare(
-    `INSERT INTO activities (title, date, time, description, image_url, release_at, link_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO activities (title, date, time, description, image_url, release_at, link_url, hint)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       body.title.trim(),
@@ -76,6 +79,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       body.image_url || null,
       body.release_at || null,
       body.link_url || null,
+      body.hint || null,
     )
     .run();
 

@@ -18,6 +18,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     image_url?: string;
     release_at?: number;
     link_url?: string;
+    hint?: string;
   };
 
   if (!body.title?.trim()) {
@@ -25,7 +26,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   }
 
   await context.env.DB.prepare(
-    `UPDATE activities SET title = ?, date = ?, time = ?, description = ?, image_url = ?, release_at = ?, link_url = ?
+    `UPDATE activities SET title = ?, date = ?, time = ?, description = ?, image_url = ?, release_at = ?, link_url = ?, hint = ?
      WHERE id = ?`,
   )
     .bind(
@@ -36,6 +37,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       body.image_url || null,
       body.release_at || null,
       body.link_url || null,
+      body.hint || null,
       activityId,
     )
     .run();

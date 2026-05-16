@@ -14,6 +14,7 @@ interface Activity {
   image_url: string | null;
   release_at: number | null;
   link_url: string | null;
+  hint: string | null;
 }
 
 const emptyActivity = {
@@ -24,6 +25,7 @@ const emptyActivity = {
   image_url: "",
   release_at: "",
   link_url: "",
+  hint: "",
 };
 
 export default function AdminMatches() {
@@ -114,6 +116,7 @@ export default function AdminMatches() {
       image_url: a.image_url || "",
       release_at: a.release_at ? epochToLocal(a.release_at) : "",
       link_url: a.link_url || "",
+      hint: a.hint || "",
     });
     setActivityMsg("");
     setShowForm(true);
@@ -132,6 +135,7 @@ export default function AdminMatches() {
       image_url: form.image_url || null,
       release_at: form.release_at ? new Date(form.release_at).getTime() : null,
       link_url: form.link_url || null,
+      hint: form.hint || null,
     };
 
     try {
@@ -385,6 +389,20 @@ export default function AdminMatches() {
                     setForm({ ...form, link_url: e.target.value })
                   }
                   placeholder="https://..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">
+                  Hint
+                </label>
+                <p className="text-xs text-white/30 mb-2">
+                  Shown on the locked card before release
+                </p>
+                <Input
+                  value={form.hint}
+                  onChange={(e) => setForm({ ...form, hint: e.target.value })}
+                  placeholder="A clue about the activity..."
                 />
               </div>
 
