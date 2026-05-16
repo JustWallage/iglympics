@@ -7,7 +7,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
-import { X, Plus, Check, XCircle, HelpCircle } from "lucide-react";
+import { X, Plus, Check, XCircle, HelpCircle, Trash2 } from "lucide-react";
 
 interface Match {
   id: number;
@@ -40,7 +40,7 @@ interface TeamEntry {
 }
 
 export default function Matches() {
-  const { user, openLoginModal } = useAuth();
+  const { user, isAdmin, openLoginModal } = useAuth();
   const { subscribe } = useWebSocket();
   const { data, loading, mutate: fetchMatches } = useCachedFetch<MatchesResponse>("/api/matches");
   const matches = data?.matches ?? [];
@@ -58,6 +58,7 @@ export default function Matches() {
   const [submitting, setSubmitting] = useState(false);
   const [createMessage, setCreateMessage] = useState("");
   const [showHelp, setShowHelp] = useState(false);
+  const [deleteMatchId, setDeleteMatchId] = useState<number | null>(null);
 
   useEffect(() => {
     const unsub = subscribe("match_created", () => fetchMatches());
@@ -72,6 +73,13 @@ export default function Matches() {
         .then((data) => setUsers(data.users));
     }
   }, [showCreate, users.length]);
+
+  const deleteMatch = async (matchId: number) => {
+    await fetch(`/api/matches/${matchId}`, { method: "DELETE" });
+    setDeleteMatchId(null);
+    if (selected?.id === matchId) setSelected(null);
+    await fetchMatches();
+  };
 
   const vote = async (matchId: number, voteType: "confirm" | "reject") => {
     await fetch(`/api/matches/${matchId}/vote`, {
@@ -254,8 +262,47 @@ export default function Matches() {
                 </div>
               )}
 
+              {/* Admin delete */}
+              {isAdmin && (
+                <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteMatchId(m.id); }}
+                    className="flex items-center gap-1.5 text-xs text-red-400/60 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 size={13} />
+                    Delete match
+                  </button>
+                </div>
+              )}
+
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteMatchId !== null && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+          onClick={() => setDeleteMatchId(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl border border-white/[0.1] bg-white/[0.06] backdrop-blur-xl p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-white/90 mb-2">Delete Match</h2>
+            <p className="text-sm text-white/55 mb-6">
+              Are you sure? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <Button className="flex-1" variant="secondary" onClick={() => setDeleteMatchId(null)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" variant="danger" onClick={() => deleteMatch(deleteMatchId)}>
+                Delete
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
