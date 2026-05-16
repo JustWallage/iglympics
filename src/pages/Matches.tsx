@@ -452,7 +452,7 @@ export default function Matches() {
                 <p className="text-xs text-white/30 mb-2">
                   Tap A or B to assign to a team
                 </p>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
                   {users.map((u) => {
                     const team = getTeam(u.id);
                     return (
