@@ -11,6 +11,7 @@ interface Activity {
   time: string | null;
   description: string | null;
   image_url: string | null;
+  link_url: string | null;
   release_at: number | null;
   released: boolean;
 }
@@ -154,6 +155,17 @@ export default function Schedule() {
               className="text-sm text-white/60 leading-relaxed [&_a]:text-accent-light [&_a]:underline"
               dangerouslySetInnerHTML={{ __html: a.description }}
             />
+          )}
+
+          {a.link_url && (
+            <a
+              href={a.link_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center justify-center gap-2 h-10 rounded-xl bg-accent/15 text-accent-light text-sm font-medium hover:bg-accent/25 transition-colors"
+            >
+              Open link
+            </a>
           )}
         </div>
       </Card>

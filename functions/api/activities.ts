@@ -8,6 +8,7 @@ interface Activity {
   description: string | null;
   image_url: string | null;
   release_at: number | null;
+  link_url: string | null;
   created_at: string;
 }
 
@@ -56,6 +57,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     description?: string;
     image_url?: string;
     release_at?: number;
+    link_url?: string;
   };
 
   if (!body.title?.trim()) {
@@ -63,8 +65,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   const result = await context.env.DB.prepare(
-    `INSERT INTO activities (title, date, time, description, image_url, release_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO activities (title, date, time, description, image_url, release_at, link_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       body.title.trim(),
@@ -73,6 +75,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       body.description || null,
       body.image_url || null,
       body.release_at || null,
+      body.link_url || null,
     )
     .run();
 

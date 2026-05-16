@@ -13,6 +13,7 @@ interface Activity {
   description: string | null;
   image_url: string | null;
   release_at: number | null;
+  link_url: string | null;
 }
 
 const emptyActivity = {
@@ -22,6 +23,7 @@ const emptyActivity = {
   description: "",
   image_url: "",
   release_at: "",
+  link_url: "",
 };
 
 export default function AdminMatches() {
@@ -111,6 +113,7 @@ export default function AdminMatches() {
       description: a.description || "",
       image_url: a.image_url || "",
       release_at: a.release_at ? epochToLocal(a.release_at) : "",
+      link_url: a.link_url || "",
     });
     setActivityMsg("");
     setShowForm(true);
@@ -128,6 +131,7 @@ export default function AdminMatches() {
       description: form.description || null,
       image_url: form.image_url || null,
       release_at: form.release_at ? new Date(form.release_at).getTime() : null,
+      link_url: form.link_url || null,
     };
 
     try {
@@ -365,6 +369,20 @@ export default function AdminMatches() {
                   value={form.image_url}
                   onChange={(e) =>
                     setForm({ ...form, image_url: e.target.value })
+                  }
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">
+                  Link URL
+                </label>
+                <Input
+                  type="url"
+                  value={form.link_url}
+                  onChange={(e) =>
+                    setForm({ ...form, link_url: e.target.value })
                   }
                   placeholder="https://..."
                 />
