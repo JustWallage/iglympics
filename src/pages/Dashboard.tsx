@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
 import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import MusicPlayer from "../components/MusicPlayer";
-import { Trophy, Star, MessageCircle, Swords, Gamepad2 } from "lucide-react";
+import { Trophy, Star, MessageCircle, Swords, Gamepad2, Volume2, Loader2 } from "lucide-react";
 
 interface PlayerScore {
   id: number;
@@ -41,7 +42,53 @@ interface Match {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { subscribe } = useWebSocket();
+
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [briefingText, setBriefingText] = useState<string | null>(null);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const LOADING_MESSAGES = [
+    "Thinking deeply...",
+    "Creating your special briefing...",
+    "Any moment now...",
+    "Just give me a bit more time...",
+    "Consulting the Belgian archives...",
+    "Polishing the microphone...",
+    "Asking the moules-frites oracle...",
+    "Almost ready to broadcast...",
+    "Calculating your disappointment score...",
+    "Summoning dry wit...",
+  ];
+
+  const playDailySummary = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    setBriefingText(null);
+    setLoadingMsgIdx(0);
+    loadingIntervalRef.current = setInterval(() => {
+      setLoadingMsgIdx((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 2500);
+    try {
+      const res = await fetch("/api/daily-summary");
+      if (!res.ok) throw new Error("Failed to generate summary");
+      const rawText = res.headers.get("X-Briefing-Text");
+      if (rawText) setBriefingText(decodeURIComponent(rawText));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.play();
+    } catch {
+      setAiError("Something went wrong, try again.");
+    } finally {
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+      setAiLoading(false);
+    }
+  };
 
   const { data: scoreData, loading: scoreLoading, mutate: mutateScores } =
     useCachedFetch<{ scores: PlayerScore[] }>("/api/scoreboard");
@@ -277,6 +324,43 @@ export default function Dashboard() {
           </div>
         )}
       </Card>
+
+      {/* Daily Briefing */}
+      {user && (
+        <Card>
+          <div className="flex items-center gap-2 mb-3">
+            <Volume2 size={16} className="text-indigo-400" />
+            <span className="text-sm font-semibold text-white/80">Daily Briefing</span>
+          </div>
+          <p className="text-xs text-white/40 mb-3">
+            AI-generated spoken summary of today's highlights.
+          </p>
+          {aiLoading && (
+            <p className="shimmer-text text-sm font-medium mb-3 min-h-5">
+              {LOADING_MESSAGES[loadingMsgIdx]}
+            </p>
+          )}
+          {aiError && (
+            <p className="text-xs text-red-400 mb-3">{aiError}</p>
+          )}
+          {briefingText && !aiLoading && (
+            <p className="text-xs text-white/55 leading-relaxed mb-3 italic">
+              {briefingText}
+            </p>
+          )}
+          <button
+            onClick={playDailySummary}
+            disabled={aiLoading}
+            className="flex items-center gap-2 h-10 px-4 w-full justify-center rounded-xl bg-accent/15 text-accent-light text-sm font-medium hover:bg-accent/25 transition-colors disabled:opacity-50"
+          >
+            {aiLoading ? (
+              <><Loader2 size={14} className="animate-spin" /> Generating...</>
+            ) : (
+              <><Volume2 size={14} /> Play today's briefing</>
+            )}
+          </button>
+        </Card>
+      )}
 
       {/* Music Player */}
       <MusicPlayer />

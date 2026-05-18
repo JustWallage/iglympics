@@ -2,6 +2,7 @@
 
 interface Env {
   DB: D1Database;
+  AI: Ai;
   SCOREBOARD_DO?: DurableObjectNamespace;
   JWT_SECRET: string;
   ADMIN_NAMES: string;

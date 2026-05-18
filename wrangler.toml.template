@@ -47,3 +47,7 @@ script_name = "iglympics-do"
 name = "SCOREBOARD_DO"
 class_name = "ScoreboardDO"
 script_name = "iglympics-do"
+
+# ─── AI ──────────────────────────────────────────────────────────────────────
+[ai]
+binding = "AI"

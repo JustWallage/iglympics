@@ -18,7 +18,8 @@
     "playwright:install": "playwright install --with-deps chromium",
     "tf:init": "cd iac && terraform init -backend=false",
     "seed:local": "tsx scripts/seed-db.ts iglympics2024 iglympics-local",
-    "prepare": "husky"
+    "prepare": "husky",
+    "wrangler:login": "wrangler login"
   },
   "dependencies": {
     "clsx": "^2.1.1",
