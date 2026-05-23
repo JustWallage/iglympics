@@ -151,13 +151,21 @@ export class ChessGameDO implements DurableObject {
       createdAt: Date.now(),
     };
 
-    // Restore hibernating WebSockets
-    for (const ws of this.state.getWebSockets()) {
-      const meta = ws.deserializeAttachment() as PlayerInfo | null;
-      if (meta) {
-        this.sessions.set(ws, meta);
+    // Restore persisted state and hibernating WebSockets before handling any
+    // incoming messages. Without blockConcurrencyWhile, a hibernation wakeup
+    // would leave gameState as the blank initial board, silently rejecting
+    // every move because status === "waiting".
+    this.state.blockConcurrencyWhile(async () => {
+      const stored = await this.state.storage.get<GameState>("game");
+      if (stored) this.gameState = stored;
+
+      for (const ws of this.state.getWebSockets()) {
+        const meta = ws.deserializeAttachment() as PlayerInfo | null;
+        if (meta) {
+          this.sessions.set(ws, meta);
+        }
       }
-    }
+    });
   }
 
   async fetch(request: Request): Promise<Response> {
