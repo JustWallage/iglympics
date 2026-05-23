@@ -4,6 +4,7 @@ interface Env {
   DB: D1Database;
   AI: Ai;
   SCOREBOARD_DO?: DurableObjectNamespace;
+  CHESS_GAME_DO?: DurableObjectNamespace;
   STORY_IMAGES: R2Bucket;
   JWT_SECRET: string;
   ADMIN_NAMES: string;

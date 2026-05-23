@@ -1,4 +1,5 @@
 export { ScoreboardDO } from "./ScoreboardDO";
+export { ChessGameDO } from "./ChessGameDO";
 
 export default {
   async fetch(): Promise<Response> {
