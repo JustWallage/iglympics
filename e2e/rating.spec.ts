@@ -10,8 +10,8 @@ test.describe("Rating", () => {
     await expect(page.locator("h1")).toHaveText("bob");
 
     // Rate bob 4 stars with a note
-    const stars = page.locator("button:has-text('★')");
-    await stars.nth(3).click(); // 4th star
+    const ratingButtons = page.locator("button:has-text('🍆')");
+    await ratingButtons.nth(3).click(); // 4th star
     await page.fill("textarea", "Great chess player!");
     await page.click('button:has-text("Submit Rating")');
 
@@ -29,8 +29,8 @@ test.describe("Rating", () => {
     await expect(page.locator("h1")).toHaveText("bob");
 
     // Select stars but don't write a note
-    const stars = page.locator("button:has-text('★')");
-    await stars.nth(2).click(); // 3rd star
+    const ratingButtons = page.locator("button:has-text('🍆')");
+    await ratingButtons.nth(2).click(); // 3rd star
 
     // Submit button should be disabled without a note
     await expect(
@@ -46,8 +46,8 @@ test.describe("Rating", () => {
     await expect(page.locator("h1")).toHaveText("alice");
 
     // Submit first rating
-    const stars = page.locator("button:has-text('★')");
-    await stars.nth(4).click(); // 5 stars
+    const ratingButtons = page.locator("button:has-text('🍆')");
+    await ratingButtons.nth(4).click(); // 5 stars
     await page.fill("textarea", "First rating!");
     await page.click('button:has-text("Submit Rating")');
     await expect(page.locator("text=First rating!")).toBeVisible({
@@ -56,7 +56,7 @@ test.describe("Rating", () => {
 
     // Submit second rating — wait for form to reset after first submission
     await expect(page.locator("textarea")).toHaveValue("");
-    await stars.nth(2).click(); // 3 stars
+    await ratingButtons.nth(2).click(); // 3 stars
     await page.fill("textarea", "Second rating!");
     await page.click('button:has-text("Submit Rating")');
     await expect(page.locator("text=Second rating!")).toBeVisible({
