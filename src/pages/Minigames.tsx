@@ -308,7 +308,7 @@ function useTriviaGame(onGameOver: (score: number) => void) {
         if (newLives === 0) {
           setGameOver(true);
           setRunning(false);
-          setTimeout(() => onGameOver(score + 0), 1200);
+          setTimeout(() => onGameOver(score), 1200);
           return;
         }
       }
@@ -1127,11 +1127,10 @@ export default function Minigames() {
 
                   return (
                     <>
-                      <div className="flex items-center justify-between mb-3">
+                      <div className={`flex items-center mb-3 ${selectedGame.id !== "trivia" ? "justify-between" : "justify-end"}`}>
                         {selectedGame.id !== "trivia" && (
                           <Badge variant="default">Score: {currentScore}</Badge>
                         )}
-                        <div className="flex-1" />
                         <button
                           onClick={() => setPlaying(false)}
                           className="text-white/30 hover:text-white/60 transition-colors p-1"
