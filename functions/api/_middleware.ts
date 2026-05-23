@@ -15,6 +15,7 @@ const PUBLIC_GET_PREFIXES = [
   "/api/activities",
   "/api/minigame-scores",
   "/api/stories",
+  "/api/chess",
 ];
 
 export const onRequest: PagesFunction<Env>[] = [
@@ -27,6 +28,10 @@ export const onRequest: PagesFunction<Env>[] = [
     }
 
     if (url.pathname === "/api/ws") {
+      return context.next();
+    }
+
+    if (url.pathname === "/api/chess/game/ws") {
       return context.next();
     }
 

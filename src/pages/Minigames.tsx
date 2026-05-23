@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
 import { useCachedFetch } from "../lib/useCachedFetch";
+import { Link } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -1448,6 +1449,23 @@ export default function Minigames() {
             </div>
           </Card>
         ))}
+
+        {/* Chess PvP link */}
+        <Link to="/games/chess-pvp">
+          <Card className="cursor-pointer active:bg-white/[0.06] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚔️</span>
+              <div>
+                <div className="text-sm font-semibold text-white/90">
+                  Chess PvP
+                </div>
+                <div className="text-xs text-white/40">
+                  Play chess against other players
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Link>
       </div>
 
       {/* Game modal */}
