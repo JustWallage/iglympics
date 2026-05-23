@@ -26,6 +26,9 @@ name = "SCOREBOARD_DO"
 class_name = "ScoreboardDO"
 script_name = "iglympics-do"
 
+[env.preview.ai]
+binding = "AI"
+
 # Production
 [env.production]
 name = "iglympics-production"
@@ -40,6 +43,9 @@ migrations_dir = "migrations"
 name = "SCOREBOARD_DO"
 class_name = "ScoreboardDO"
 script_name = "iglympics-do"
+
+[env.production.ai]
+binding = "AI"
 
 # ─── Durable Object (external Worker binding) ───────────────────────────────
 
