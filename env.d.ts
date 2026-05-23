@@ -4,6 +4,7 @@ interface Env {
   DB: D1Database;
   AI: Ai;
   SCOREBOARD_DO?: DurableObjectNamespace;
+  STORY_IMAGES: R2Bucket;
   JWT_SECRET: string;
   ADMIN_NAMES: string;
   ALLOW_TEST_RESET?: string;

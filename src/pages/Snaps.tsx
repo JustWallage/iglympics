@@ -8,17 +8,6 @@ import StoryViewer from "../components/Stories/StoryViewer";
 import CreateStory from "../components/Stories/CreateStory";
 import type { StoryGroup } from "../components/Stories/StoriesBar";
 
-const BG_GRADIENTS: Record<string, string> = {
-  violet: "from-violet-600 to-purple-900",
-  sky: "from-sky-500 to-blue-900",
-  rose: "from-rose-500 to-pink-900",
-  amber: "from-amber-500 to-orange-900",
-  emerald: "from-emerald-500 to-teal-900",
-  fuchsia: "from-fuchsia-500 to-purple-900",
-  orange: "from-orange-500 to-red-900",
-  cyan: "from-cyan-500 to-blue-900",
-};
-
 export default function Snaps() {
   const { user, openLoginModal } = useAuth();
   const { subscribe } = useWebSocket();
@@ -73,7 +62,7 @@ export default function Snaps() {
       </div>
 
       <p className="text-xs text-white/35">
-        Ephemeral snaps that disappear after 24 hours ⏳
+        Ephemeral photo snaps that disappear after 24 hours ⏳
       </p>
 
       {groups.length === 0 ? (
@@ -81,7 +70,7 @@ export default function Snaps() {
           <div className="text-center py-8">
             <Camera size={32} className="mx-auto text-white/15 mb-3" />
             <p className="text-sm text-white/40 mb-4">
-              No snaps yet — be the first to share!
+              No snaps yet — be the first to share a photo!
             </p>
             <button
               onClick={handleAdd}
@@ -95,28 +84,31 @@ export default function Snaps() {
         <div className="grid grid-cols-2 gap-3">
           {sorted.map((group) => {
             const latestStory = group.stories[0];
-            const gradient =
-              BG_GRADIENTS[latestStory?.bg_color ?? "violet"] ??
-              BG_GRADIENTS.violet;
+            const imageUrl = `/api/stories/image/${latestStory?.image_key}`;
             return (
               <button
                 key={group.user_id}
                 onClick={() => setViewingGroup(group)}
                 className="relative aspect-[3/4] rounded-2xl overflow-hidden group"
               >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
+                {/* Story image */}
+                <img
+                  src={imageUrl}
+                  alt={`${group.user_name}'s snap`}
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                  {latestStory?.emoji && (
-                    <span className="text-3xl mb-2">{latestStory.emoji}</span>
-                  )}
-                  <p className="text-sm font-bold text-white text-center line-clamp-3 drop-shadow-lg">
-                    {latestStory?.content}
-                  </p>
-                </div>
+                {/* Dark overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                {/* Caption overlay */}
+                {latestStory?.caption && (
+                  <div className="absolute inset-x-0 bottom-12 px-3">
+                    <p className="text-xs font-medium text-white text-center line-clamp-2 drop-shadow-lg">
+                      {latestStory.caption}
+                    </p>
+                  </div>
+                )}
                 {/* User label */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                <div className="absolute bottom-0 left-0 right-0 p-3">
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold text-white">
                       {group.user_name.charAt(0).toUpperCase()}

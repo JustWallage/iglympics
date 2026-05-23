@@ -8,9 +8,8 @@ import CreateStory from "./CreateStory";
 
 interface Story {
   id: number;
-  content: string;
-  bg_color: string;
-  emoji: string | null;
+  image_key: string;
+  caption: string | null;
   created_at: string;
   expires_at: string;
 }
@@ -20,17 +19,6 @@ export interface StoryGroup {
   user_name: string;
   stories: Story[];
 }
-
-const BG_RING_COLORS: Record<string, string> = {
-  violet: "ring-violet-400",
-  sky: "ring-sky-400",
-  rose: "ring-rose-400",
-  amber: "ring-amber-400",
-  emerald: "ring-emerald-400",
-  fuchsia: "ring-fuchsia-400",
-  orange: "ring-orange-400",
-  cyan: "ring-cyan-400",
-};
 
 export default function StoriesBar() {
   const { user, openLoginModal } = useAuth();
@@ -81,20 +69,26 @@ export default function StoriesBar() {
 
         {/* User story circles */}
         {sorted.map((group) => {
-          const ringColor =
-            BG_RING_COLORS[group.stories[0]?.bg_color ?? "violet"] ??
-            "ring-violet-400";
           const initial = group.user_name.charAt(0).toUpperCase();
+          const thumbUrl = `/api/stories/image/${group.stories[0]?.image_key}`;
           return (
             <button
               key={group.user_id}
               onClick={() => setViewingGroup(group)}
               className="flex flex-col items-center gap-1.5 shrink-0"
             >
-              <div
-                className={`h-14 w-14 rounded-full ring-2 ${ringColor} bg-white/[0.08] flex items-center justify-center text-lg font-bold text-white/70`}
-              >
-                {group.stories[0]?.emoji ?? initial}
+              <div className="h-14 w-14 rounded-full ring-2 ring-accent-light overflow-hidden bg-white/[0.08]">
+                {group.stories[0]?.image_key ? (
+                  <img
+                    src={thumbUrl}
+                    alt={group.user_name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-lg font-bold text-white/70">
+                    {initial}
+                  </div>
+                )}
               </div>
               <span className="text-[10px] text-white/50 font-medium max-w-[56px] truncate">
                 {user && group.user_id === user.id ? "You" : group.user_name}

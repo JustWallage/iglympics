@@ -2,6 +2,12 @@ name = "iglympics"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = "dist"
 
+# ─── R2 Bindings ─────────────────────────────────────────────────────────────
+
+[[r2_buckets]]
+binding = "STORY_IMAGES"
+bucket_name = "iglympics-stories-local"
+
 # ─── D1 Bindings ─────────────────────────────────────────────────────────────
 
 # Default (local dev)
@@ -21,6 +27,10 @@ database_name = "iglympics-staging"
 database_id = "STAGING_DB_ID"
 migrations_dir = "migrations"
 
+[[env.preview.r2_buckets]]
+binding = "STORY_IMAGES"
+bucket_name = "iglympics-stories-staging"
+
 [[env.preview.durable_objects.bindings]]
 name = "SCOREBOARD_DO"
 class_name = "ScoreboardDO"
@@ -38,6 +48,10 @@ binding = "DB"
 database_name = "iglympics-prod"
 database_id = "PROD_DB_ID"
 migrations_dir = "migrations"
+
+[[env.production.r2_buckets]]
+binding = "STORY_IMAGES"
+bucket_name = "iglympics-stories-prod"
 
 [[env.production.durable_objects.bindings]]
 name = "SCOREBOARD_DO"

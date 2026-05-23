@@ -1,15 +1,14 @@
 /**
  * GET  /api/stories  — list all active (non-expired) stories, grouped by user
- * POST /api/stories  — create a new story (auth required)
+ * POST /api/stories  — create a new image story (multipart/form-data, auth required)
  */
 
 interface StoryRow {
   id: number;
   user_id: number;
   user_name: string;
-  content: string;
-  bg_color: string;
-  emoji: string | null;
+  image_key: string;
+  caption: string | null;
   created_at: string;
   expires_at: string;
 }
@@ -22,8 +21,8 @@ interface UserStories {
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { results } = await context.env.DB.prepare(
-    `SELECT s.id, s.user_id, u.name AS user_name, s.content,
-            s.bg_color, s.emoji, s.created_at, s.expires_at
+    `SELECT s.id, s.user_id, u.name AS user_name, s.image_key,
+            s.caption, s.created_at, s.expires_at
      FROM stories s
      JOIN users u ON u.id = s.user_id
      WHERE s.expires_at > datetime('now')
@@ -40,9 +39,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
     group.stories.push({
       id: row.id,
-      content: row.content,
-      bg_color: row.bg_color,
-      emoji: row.emoji,
+      image_key: row.image_key,
+      caption: row.caption,
       created_at: row.created_at,
       expires_at: row.expires_at,
     });
@@ -51,16 +49,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   return Response.json({ story_groups: Array.from(byUser.values()) });
 };
 
-const VALID_COLORS = [
-  "violet",
-  "sky",
-  "rose",
-  "amber",
-  "emerald",
-  "fuchsia",
-  "orange",
-  "cyan",
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
 ];
+const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const user = (context.data as { user?: { id: number; name: string } }).user;
@@ -68,45 +63,55 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await context.request.json()) as {
-    content?: string;
-    bg_color?: string;
-    emoji?: string;
-  };
+  const formData = await context.request.formData();
+  const file = formData.get("image");
+  const caption = (formData.get("caption") as string | null)?.trim() || null;
 
-  const content = body.content?.trim();
-  if (!content || content.length === 0) {
-    return Response.json(
-      { error: "Story content cannot be empty" },
-      { status: 400 },
-    );
+  if (!(file instanceof File) || !file.size) {
+    return Response.json({ error: "Image is required" }, { status: 400 });
   }
-  if (content.length > 200) {
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
     return Response.json(
-      { error: "Story content too long (max 200 chars)" },
+      { error: "Only JPEG, PNG, WebP, and GIF images are allowed" },
       { status: 400 },
     );
   }
 
-  const bgColor = VALID_COLORS.includes(body.bg_color ?? "")
-    ? body.bg_color!
-    : "violet";
+  if (file.size > MAX_SIZE) {
+    return Response.json(
+      { error: "Image must be under 5 MB" },
+      { status: 400 },
+    );
+  }
 
-  const emoji = body.emoji?.trim()?.slice(0, 4) || null;
+  if (caption && caption.length > 200) {
+    return Response.json(
+      { error: "Caption too long (max 200 chars)" },
+      { status: 400 },
+    );
+  }
+
+  // Generate unique key and upload to R2
+  const ext = file.type.split("/")[1] === "jpeg" ? "jpg" : file.type.split("/")[1];
+  const imageKey = `stories/${user.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+
+  await context.env.STORY_IMAGES.put(imageKey, file.stream(), {
+    httpMetadata: { contentType: file.type },
+  });
 
   const result = await context.env.DB.prepare(
-    `INSERT INTO stories (user_id, content, bg_color, emoji) VALUES (?, ?, ?, ?)`,
+    `INSERT INTO stories (user_id, image_key, caption) VALUES (?, ?, ?)`,
   )
-    .bind(user.id, content, bgColor, emoji)
+    .bind(user.id, imageKey, caption)
     .run();
 
   const story = {
     id: result.meta.last_row_id,
     user_id: user.id,
     user_name: user.name,
-    content,
-    bg_color: bgColor,
-    emoji,
+    image_key: imageKey,
+    caption,
     created_at: new Date().toISOString().replace("T", " ").slice(0, 19),
   };
 
