@@ -62,7 +62,8 @@ export default function Snaps() {
       </div>
 
       <p className="text-xs text-white/35">
-        Ephemeral photo snaps that disappear after 24 hours ⏳
+        Ephemeral photo snaps that disappear after 24 hours{" "}
+        <span role="img" aria-label="hourglass">⏳</span>
       </p>
 
       {groups.length === 0 ? (

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Send, Camera, ImagePlus } from "lucide-react";
 
 interface Props {
@@ -10,6 +10,13 @@ export default function CreateStory({ onClose, onCreated }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
+
+  // Revoke object URL on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +56,6 @@ export default function CreateStory({ onClose, onCreated }: Props) {
         const data = (await res.json()) as { error?: string };
         throw new Error(data.error || "Failed to post snap");
       }
-      if (preview) URL.revokeObjectURL(preview);
       onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

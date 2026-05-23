@@ -93,8 +93,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   // Generate unique key and upload to R2
-  const ext = file.type.split("/")[1] === "jpeg" ? "jpg" : file.type.split("/")[1];
-  const imageKey = `stories/${user.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const ext = file.type.split("/")[1];
+  const normalizedExt = ext === "jpeg" ? "jpg" : ext;
+  const imageKey = `stories/${user.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${normalizedExt}`;
 
   await context.env.STORY_IMAGES.put(imageKey, file.stream(), {
     httpMetadata: { contentType: file.type },
@@ -106,13 +107,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     .bind(user.id, imageKey, caption)
     .run();
 
+  const inserted = await context.env.DB.prepare(
+    `SELECT created_at FROM stories WHERE id = ?`,
+  )
+    .bind(result.meta.last_row_id)
+    .first<{ created_at: string }>();
+
   const story = {
     id: result.meta.last_row_id,
     user_id: user.id,
     user_name: user.name,
     image_key: imageKey,
     caption,
-    created_at: new Date().toISOString().replace("T", " ").slice(0, 19),
+    created_at: inserted?.created_at ?? new Date().toISOString().replace("T", " ").slice(0, 19),
   };
 
   // Broadcast via Durable Object if available
