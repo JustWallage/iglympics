@@ -7,6 +7,7 @@ import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import MusicPlayer from "../components/MusicPlayer";
 import { Trophy, MessageCircle, Swords, Gamepad2, Volume2, Loader2 } from "lucide-react";
+import StoriesBar from "../components/Stories/StoriesBar";
 
 interface PlayerScore {
   id: number;
@@ -146,6 +147,9 @@ export default function Dashboard() {
   return (
     <div className="space-y-5">
       <h1 className="text-xl font-bold text-white/90">Dashboard</h1>
+
+      {/* Stories / Snaps bar */}
+      <StoriesBar />
 
       {/* Top 3 */}
       <Card>
