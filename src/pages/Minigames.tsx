@@ -41,6 +41,7 @@ interface GameDef {
 const GAMES: GameDef[] = [
   { id: "snake", name: "Snake", emoji: "🐍" },
   { id: "flappy", name: "Flappy Bird", emoji: "🐦" },
+  { id: "chess", name: "Chess", emoji: "♟️" },
 ];
 
 // ─── Snake Game ──────────────────────────────────────────────────────────────
@@ -461,6 +462,416 @@ function FlappyBoard({
   );
 }
 
+// ─── Chess Game ──────────────────────────────────────────────────────────────
+
+type PieceColor = "w" | "b";
+type PieceType = "K" | "Q" | "R" | "B" | "N" | "P";
+type ChessPiece = { color: PieceColor; type: PieceType };
+type Square = ChessPiece | null;
+type Board = Square[][];
+
+const PIECE_VALUES: Record<PieceType, number> = {
+  P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0,
+};
+
+const PIECE_CHARS: Record<string, string> = {
+  wK: "♔", wQ: "♕", wR: "♖", wB: "♗", wN: "♘", wP: "♙",
+  bK: "♚", bQ: "♛", bR: "♜", bB: "♝", bN: "♞", bP: "♟",
+};
+
+function initialBoard(): Board {
+  const backRank: PieceType[] = ["R", "N", "B", "Q", "K", "B", "N", "R"];
+  const board: Board = Array.from({ length: 8 }, () => Array(8).fill(null));
+  for (let c = 0; c < 8; c++) {
+    board[0][c] = { color: "b", type: backRank[c] };
+    board[1][c] = { color: "b", type: "P" };
+    board[6][c] = { color: "w", type: "P" };
+    board[7][c] = { color: "w", type: backRank[c] };
+  }
+  return board;
+}
+
+function inBounds(r: number, c: number) {
+  return r >= 0 && r < 8 && c >= 0 && c < 8;
+}
+
+function isKingInCheck(board: Board, color: PieceColor): boolean {
+  let kingR = -1, kingC = -1;
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++)
+      if (board[r][c]?.color === color && board[r][c]?.type === "K") {
+        kingR = r; kingC = c;
+      }
+  if (kingR === -1) return true;
+  const enemy = color === "w" ? "b" : "w";
+  return getRawMoves(board, enemy).some(m => m.toR === kingR && m.toC === kingC);
+}
+
+interface ChessMove {
+  fromR: number; fromC: number;
+  toR: number; toC: number;
+  promotion?: PieceType;
+}
+
+function getRawMoves(board: Board, color: PieceColor): ChessMove[] {
+  const moves: ChessMove[] = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (!p || p.color !== color) continue;
+      const add = (tr: number, tc: number) => {
+        if (!inBounds(tr, tc)) return false;
+        const target = board[tr][tc];
+        if (target?.color === color) return false;
+        if (p.type === "P" && (tr === 0 || tr === 7)) {
+          for (const promo of ["Q", "R", "B", "N"] as PieceType[])
+            moves.push({ fromR: r, fromC: c, toR: tr, toC: tc, promotion: promo });
+        } else {
+          moves.push({ fromR: r, fromC: c, toR: tr, toC: tc });
+        }
+        return !target; // continue sliding if empty
+      };
+      const slide = (dr: number, dc: number) => {
+        for (let i = 1; i < 8; i++)
+          if (!add(r + dr * i, c + dc * i)) break;
+      };
+      switch (p.type) {
+        case "P": {
+          const dir = color === "w" ? -1 : 1;
+          const startRow = color === "w" ? 6 : 1;
+          if (inBounds(r + dir, c) && !board[r + dir][c]) {
+            add(r + dir, c);
+            if (r === startRow && !board[r + 2 * dir][c])
+              add(r + 2 * dir, c);
+          }
+          for (const dc of [-1, 1])
+            if (inBounds(r + dir, c + dc) && board[r + dir][c + dc]?.color === (color === "w" ? "b" : "w"))
+              add(r + dir, c + dc);
+          break;
+        }
+        case "N":
+          for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])
+            add(r + dr, c + dc);
+          break;
+        case "B": slide(1,1); slide(1,-1); slide(-1,1); slide(-1,-1); break;
+        case "R": slide(1,0); slide(-1,0); slide(0,1); slide(0,-1); break;
+        case "Q":
+          slide(1,1); slide(1,-1); slide(-1,1); slide(-1,-1);
+          slide(1,0); slide(-1,0); slide(0,1); slide(0,-1);
+          break;
+        case "K":
+          for (let dr = -1; dr <= 1; dr++)
+            for (let dc = -1; dc <= 1; dc++)
+              if (dr || dc) add(r + dr, c + dc);
+          break;
+      }
+    }
+  }
+  return moves;
+}
+
+function applyMove(board: Board, m: ChessMove): Board {
+  const b = board.map(row => [...row]);
+  const piece = b[m.fromR][m.fromC]!;
+  b[m.toR][m.toC] = m.promotion ? { color: piece.color, type: m.promotion } : piece;
+  b[m.fromR][m.fromC] = null;
+  return b;
+}
+
+function getLegalMoves(board: Board, color: PieceColor): ChessMove[] {
+  return getRawMoves(board, color).filter(m => {
+    const newBoard = applyMove(board, m);
+    return !isKingInCheck(newBoard, color);
+  });
+}
+
+function evaluateBoard(board: Board): number {
+  let score = 0;
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (!p) continue;
+      const val = PIECE_VALUES[p.type];
+      // Add small positional bonus for center control
+      const centerBonus = (p.type !== "K") ? (3.5 - Math.abs(c - 3.5)) * 0.05 + (3.5 - Math.abs(r - 3.5)) * 0.05 : 0;
+      score += (p.color === "b" ? 1 : -1) * (val + centerBonus);
+    }
+  return score;
+}
+
+function aiPickMove(board: Board): ChessMove | null {
+  const moves = getLegalMoves(board, "b");
+  if (moves.length === 0) return null;
+
+  // Simple 1-ply search: evaluate each move and pick the best
+  let bestScore = -Infinity;
+  const bestMoves: ChessMove[] = [];
+  for (const m of moves) {
+    const newBoard = applyMove(board, m);
+    // Also consider opponent's best response
+    const opponentMoves = getLegalMoves(newBoard, "w");
+    let worstCase = evaluateBoard(newBoard);
+    if (opponentMoves.length > 0) {
+      let bestOpponent = Infinity;
+      for (const om of opponentMoves) {
+        const afterOpponent = applyMove(newBoard, om);
+        bestOpponent = Math.min(bestOpponent, evaluateBoard(afterOpponent));
+      }
+      worstCase = bestOpponent;
+    }
+    if (worstCase > bestScore) {
+      bestScore = worstCase;
+      bestMoves.length = 0;
+      bestMoves.push(m);
+    } else if (worstCase === bestScore) {
+      bestMoves.push(m);
+    }
+  }
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+function useChess(onGameOver: (score: number) => void) {
+  const [board, setBoard] = useState<Board>(initialBoard);
+  const [turn, setTurn] = useState<PieceColor>("w");
+  const [selected, setSelected] = useState<[number, number] | null>(null);
+  const [legalMoves, setLegalMoves] = useState<ChessMove[]>([]);
+  const [score, setScore] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState("");
+  const [lastMove, setLastMove] = useState<ChessMove | null>(null);
+  const [inCheck, setInCheck] = useState(false);
+
+  const scoreRef = useRef(0);
+  scoreRef.current = score;
+
+  const reset = useCallback(() => {
+    const b = initialBoard();
+    setBoard(b);
+    setTurn("w");
+    setSelected(null);
+    setLegalMoves([]);
+    setScore(0);
+    setGameOver(false);
+    setGameOverReason("");
+    setRunning(true);
+    setLastMove(null);
+    setInCheck(false);
+  }, []);
+
+  const endGame = useCallback((reason: string) => {
+    setRunning(false);
+    setGameOver(true);
+    setGameOverReason(reason);
+    onGameOver(scoreRef.current);
+  }, [onGameOver]);
+
+  // Check game end conditions after each move
+  const checkGameState = useCallback((newBoard: Board, nextTurn: PieceColor) => {
+    const nextMoves = getLegalMoves(newBoard, nextTurn);
+    const kingInCheck = isKingInCheck(newBoard, nextTurn);
+    setInCheck(kingInCheck && nextTurn === "w");
+
+    if (nextMoves.length === 0) {
+      if (kingInCheck) {
+        if (nextTurn === "b") {
+          return "Checkmate — you win!";
+        } else {
+          return "Checkmate — you lose!";
+        }
+      }
+      return "Stalemate — draw!";
+    }
+    return null;
+  }, []);
+
+  const selectSquare = useCallback((r: number, c: number) => {
+    if (!running || gameOver || turn !== "w") return;
+
+    const piece = board[r][c];
+
+    // If we have a selected piece, try to move
+    if (selected) {
+      const move = legalMoves.find(
+        m => m.fromR === selected[0] && m.fromC === selected[1] && m.toR === r && m.toC === c
+      );
+
+      if (move) {
+        const captured = board[r][c];
+        const newBoard = applyMove(board, move);
+        let newScore = scoreRef.current;
+        if (captured) {
+          newScore += PIECE_VALUES[captured.type];
+          setScore(newScore);
+          scoreRef.current = newScore;
+        }
+        setBoard(newBoard);
+        setSelected(null);
+        setLegalMoves([]);
+        setLastMove(move);
+
+        const result = checkGameState(newBoard, "b");
+        if (result) {
+          endGame(result);
+          return;
+        }
+        setTurn("b");
+        return;
+      }
+
+      // If clicking own piece, reselect
+      if (piece?.color === "w") {
+        setSelected([r, c]);
+        setLegalMoves(getLegalMoves(board, "w").filter(m => m.fromR === r && m.fromC === c));
+        return;
+      }
+
+      // Deselect
+      setSelected(null);
+      setLegalMoves([]);
+      return;
+    }
+
+    // Select a white piece
+    if (piece?.color === "w") {
+      setSelected([r, c]);
+      setLegalMoves(getLegalMoves(board, "w").filter(m => m.fromR === r && m.fromC === c));
+    }
+  }, [running, gameOver, turn, board, selected, legalMoves, checkGameState, endGame]);
+
+  // AI move
+  useEffect(() => {
+    if (!running || gameOver || turn !== "b") return;
+
+    const timeout = setTimeout(() => {
+      const move = aiPickMove(board);
+      if (!move) {
+        // No legal moves for AI
+        if (isKingInCheck(board, "b")) {
+          endGame("Checkmate — you win!");
+        } else {
+          endGame("Stalemate — draw!");
+        }
+        return;
+      }
+
+      const captured = board[move.toR][move.toC];
+      const newBoard = applyMove(board, move);
+      if (captured) {
+        // AI captures - subtract from player score
+        setScore(prev => Math.max(0, prev - PIECE_VALUES[captured.type]));
+      }
+      setBoard(newBoard);
+      setLastMove(move);
+
+      const result = checkGameState(newBoard, "w");
+      if (result) {
+        endGame(result);
+        return;
+      }
+      setTurn("w");
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [running, gameOver, turn, board, checkGameState, endGame]);
+
+  return { board, turn, selected, legalMoves, score, running, gameOver, gameOverReason, lastMove, inCheck, reset, selectSquare };
+}
+
+function ChessBoard({
+  board,
+  selected,
+  legalMoves,
+  lastMove,
+  inCheck,
+  turn,
+  onSelect,
+}: {
+  board: Board;
+  selected: [number, number] | null;
+  legalMoves: ChessMove[];
+  lastMove: ChessMove | null;
+  inCheck: boolean;
+  turn: PieceColor;
+  onSelect: (r: number, c: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [cellSize, setCellSize] = useState(0);
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        setCellSize(Math.floor(w / 8));
+      }
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
+  const size = cellSize * 8;
+
+  return (
+    <div ref={containerRef} className="w-full">
+      <div
+        className="relative mx-auto rounded-lg border border-white/[0.1] overflow-hidden"
+        style={{ width: size, height: size }}
+      >
+        {Array.from({ length: 8 }, (_, r) =>
+          Array.from({ length: 8 }, (_, c) => {
+            const piece = board[r][c];
+            const isLight = (r + c) % 2 === 0;
+            const isSelected = selected?.[0] === r && selected?.[1] === c;
+            const isLegalTarget = legalMoves.some(m => m.toR === r && m.toC === c);
+            const isLastMove = lastMove && ((lastMove.fromR === r && lastMove.fromC === c) || (lastMove.toR === r && lastMove.toC === c));
+            const isKingCheck = inCheck && piece?.color === "w" && piece?.type === "K";
+            const isClickable = turn === "w" && (piece?.color === "w" || isLegalTarget);
+
+            let bg = isLight ? "bg-amber-100" : "bg-amber-800";
+            if (isSelected) bg = "bg-sky-400/70";
+            else if (isLastMove) bg = isLight ? "bg-yellow-200" : "bg-yellow-600";
+            if (isKingCheck) bg = "bg-red-500/60";
+
+            return (
+              <div
+                key={`${r}-${c}`}
+                className={`absolute flex items-center justify-center ${bg} ${isClickable ? "cursor-pointer" : ""}`}
+                style={{
+                  width: cellSize,
+                  height: cellSize,
+                  left: c * cellSize,
+                  top: r * cellSize,
+                  fontSize: cellSize * 0.7,
+                  lineHeight: 1,
+                }}
+                onClick={() => onSelect(r, c)}
+              >
+                {piece && (
+                  <span className={`select-none ${piece.color === "w" ? "drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]" : "drop-shadow-[0_1px_1px_rgba(255,255,255,0.3)]"}`}>
+                    {PIECE_CHARS[`${piece.color}${piece.type}`]}
+                  </span>
+                )}
+                {isLegalTarget && !piece && (
+                  <div
+                    className="rounded-full bg-black/20"
+                    style={{ width: cellSize * 0.25, height: cellSize * 0.25 }}
+                  />
+                )}
+                {isLegalTarget && piece && (
+                  <div
+                    className="absolute inset-0 rounded-sm border-2 border-red-500/50"
+                  />
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function Minigames() {
@@ -497,6 +908,7 @@ export default function Minigames() {
 
   const snakeGame = useSnake(handleGameOver);
   const flappyGame = useFlappyBird(handleGameOver);
+  const chessGame = useChess(handleGameOver);
   const [gameOverReady, setGameOverReady] = useState(false);
 
   const startGame = () => {
@@ -504,12 +916,14 @@ export default function Minigames() {
     setGameOverReady(false);
     if (selectedGame?.id === "snake") snakeGame.reset();
     else if (selectedGame?.id === "flappy") flappyGame.reset();
+    else if (selectedGame?.id === "chess") chessGame.reset();
   };
 
   // Delay-enable buttons after game over to prevent accidental taps
   const isGameOverNow =
     (selectedGame?.id === "snake" && snakeGame.gameOver) ||
-    (selectedGame?.id === "flappy" && flappyGame.gameOver);
+    (selectedGame?.id === "flappy" && flappyGame.gameOver) ||
+    (selectedGame?.id === "chess" && chessGame.gameOver);
   useEffect(() => {
     if (!isGameOverNow) {
       setGameOverReady(false);
@@ -722,7 +1136,7 @@ export default function Minigames() {
                 </div>
 
                 <Button onClick={startGame} className="w-full">
-                  {(selectedGame.id === "snake" ? snakeGame.gameOver : flappyGame.gameOver)
+                  {(selectedGame.id === "snake" ? snakeGame.gameOver : selectedGame.id === "chess" ? chessGame.gameOver : flappyGame.gameOver)
                     ? "Play Again"
                     : "Start Game"}
                 </Button>
@@ -737,16 +1151,23 @@ export default function Minigames() {
                 {/* In-game view */}
                 {(() => {
                   const currentScore =
-                    selectedGame.id === "snake" ? snakeGame.score : flappyGame.score;
+                    selectedGame.id === "snake" ? snakeGame.score : selectedGame.id === "chess" ? chessGame.score : flappyGame.score;
                   const isGameOver =
                     selectedGame.id === "snake"
                       ? snakeGame.gameOver
-                      : flappyGame.gameOver;
+                      : selectedGame.id === "chess"
+                        ? chessGame.gameOver
+                        : flappyGame.gameOver;
 
                   return (
                     <>
                       <div className="flex items-center justify-between mb-3">
                         <Badge variant="default">Score: {currentScore}</Badge>
+                        {selectedGame.id === "chess" && !chessGame.gameOver && (
+                          <span className="text-xs text-white/40">
+                            {chessGame.turn === "w" ? "Your turn" : "Thinking..."}
+                          </span>
+                        )}
                         <button
                           onClick={() => setPlaying(false)}
                           className="text-white/30 hover:text-white/60 transition-colors p-1"
@@ -774,11 +1195,26 @@ export default function Minigames() {
                           )}
                         </div>
                       )}
+                      {selectedGame.id === "chess" && (
+                        <ChessBoard
+                          board={chessGame.board}
+                          selected={chessGame.selected}
+                          legalMoves={chessGame.legalMoves}
+                          lastMove={chessGame.lastMove}
+                          inCheck={chessGame.inCheck}
+                          turn={chessGame.turn}
+                          onSelect={chessGame.selectSquare}
+                        />
+                      )}
 
                       {isGameOver && (
                         <div className="mt-3 text-center">
                           <p className="text-sm text-white/70 mb-2">
-                            Game Over! Score:{" "}
+                            {selectedGame.id === "chess" && chessGame.gameOverReason ? (
+                              <>{chessGame.gameOverReason} Score:{" "}</>
+                            ) : (
+                              <>Game Over! Score:{" "}</>
+                            )}
                             <span className="font-bold text-white/90">
                               {currentScore}
                             </span>
