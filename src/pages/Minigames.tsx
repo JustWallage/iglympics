@@ -1670,7 +1670,7 @@ export default function Minigames() {
                             >
                               <ArrowLeft size={32} />
                             </button>
-                            <div className="h-16 rounded-2xl bg-white/[0.05]" />
+                            <div className="h-16 rounded-2xl bg-white/[0.05]" role="presentation" aria-hidden="true" />
                             <button
                               onPointerDown={() => snakeGame.changeDir("RIGHT")}
                               className="h-16 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
