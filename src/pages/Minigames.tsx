@@ -1655,34 +1655,34 @@ export default function Minigames() {
                       {/* Snake D-pad controls */}
                       {selectedGame.id === "snake" && !snakeGame.gameOver && (
                         <div className="mt-4 flex justify-center">
-                          <div className="grid grid-cols-3 gap-1.5 w-36">
+                          <div className="grid grid-cols-3 gap-2 w-52 select-none">
                             <div />
                             <button
                               onPointerDown={() => snakeGame.changeDir("UP")}
-                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                              className="h-16 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
                             >
-                              <ArrowUp size={22} />
+                              <ArrowUp size={32} />
                             </button>
                             <div />
                             <button
                               onPointerDown={() => snakeGame.changeDir("LEFT")}
-                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                              className="h-16 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
                             >
-                              <ArrowLeft size={22} />
+                              <ArrowLeft size={32} />
                             </button>
-                            <div />
+                            <div className="h-16 rounded-2xl bg-white/[0.05]" />
                             <button
                               onPointerDown={() => snakeGame.changeDir("RIGHT")}
-                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                              className="h-16 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
                             >
-                              <ArrowRight size={22} />
+                              <ArrowRight size={32} />
                             </button>
                             <div />
                             <button
                               onPointerDown={() => snakeGame.changeDir("DOWN")}
-                              className="h-11 rounded-xl bg-white/[0.08] active:bg-white/[0.15] flex items-center justify-center text-white/60"
+                              className="h-16 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
                             >
-                              <ArrowDown size={22} />
+                              <ArrowDown size={32} />
                             </button>
                             <div />
                           </div>
