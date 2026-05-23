@@ -321,7 +321,7 @@ export class ChessGameDO implements DurableObject {
 
   private broadcast(message: object): void {
     const msg = JSON.stringify(message);
-    for (const [ws] of this.sessions) {
+    for (const ws of this.state.getWebSockets()) {
       try {
         ws.send(msg);
       } catch {

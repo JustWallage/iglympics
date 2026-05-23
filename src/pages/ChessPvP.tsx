@@ -264,6 +264,8 @@ function GameView({
 
   const myColor = gameState?.players.find(p => p.id === userId)?.color || "w";
 
+  const reconnectRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const connectWs = useCallback(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(
@@ -291,8 +293,7 @@ function GameView({
 
     ws.onclose = () => {
       setConnected(false);
-      // Reconnect after delay
-      setTimeout(connectWs, 3000);
+      reconnectRef.current = setTimeout(connectWs, 3000);
     };
 
     ws.onerror = () => ws.close();
@@ -302,6 +303,7 @@ function GameView({
   useEffect(() => {
     connectWs();
     return () => {
+      clearTimeout(reconnectRef.current);
       wsRef.current?.close();
     };
   }, [connectWs]);
