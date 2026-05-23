@@ -6,7 +6,7 @@ import { useCachedFetch } from "../lib/useCachedFetch";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import MusicPlayer from "../components/MusicPlayer";
-import { Trophy, Star, MessageCircle, Swords, Gamepad2, Volume2, Loader2 } from "lucide-react";
+import { Trophy, MessageCircle, Swords, Gamepad2, Volume2, Loader2 } from "lucide-react";
 
 interface PlayerScore {
   id: number;
@@ -183,7 +183,7 @@ export default function Dashboard() {
               onClick={() => navigate(`/profile/${highestRated.id}`)}
             >
               <div className="flex items-center gap-1.5 mb-2">
-                <Star size={14} className="text-amber-400" />
+                <span className="text-amber-400" style={{ fontSize: 14 }}>🍆</span>
                 <span className="text-[11px] font-medium text-white/40 uppercase tracking-wider">
                   Highest Rated
                 </span>
@@ -192,7 +192,7 @@ export default function Dashboard() {
                 {highestRated.name}
               </div>
               <div className="text-lg font-bold text-white/90 tabular-nums">
-                {highestRated.avg_rating} ★
+                {highestRated.avg_rating} 🍆
               </div>
             </Card>
           )}
@@ -202,7 +202,7 @@ export default function Dashboard() {
               onClick={() => navigate(`/profile/${lowestRated.id}`)}
             >
               <div className="flex items-center gap-1.5 mb-2">
-                <Star size={14} className="text-red-400" />
+                <span className="text-red-400" style={{ fontSize: 14 }}>🍆</span>
                 <span className="text-[11px] font-medium text-white/40 uppercase tracking-wider">
                   Lowest Rated
                 </span>
@@ -211,7 +211,7 @@ export default function Dashboard() {
                 {lowestRated.name}
               </div>
               <div className="text-lg font-bold text-white/90 tabular-nums">
-                {lowestRated.avg_rating} ★
+                {lowestRated.avg_rating} 🍆
               </div>
             </Card>
           )}

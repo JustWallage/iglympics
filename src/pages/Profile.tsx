@@ -180,7 +180,7 @@ export default function Profile() {
                           : "text-white/15 hover:text-amber-400/50"
                       }`}
                     >
-                      ★
+                      🍆
                     </button>
                   ))}
                 </div>
@@ -227,9 +227,9 @@ export default function Profile() {
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-amber-400 text-sm">
-                        {"★".repeat(r.rating)}
+                        {"🍆".repeat(r.rating)}
                         <span className="text-white/15">
-                          {"★".repeat(5 - r.rating)}
+                          {"🍆".repeat(5 - r.rating)}
                         </span>
                       </span>
                       <span className="text-[11px] text-white/30">
