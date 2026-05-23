@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   ArrowRight,
   HelpCircle,
+  Heart,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -41,7 +42,375 @@ interface GameDef {
 const GAMES: GameDef[] = [
   { id: "snake", name: "Snake", emoji: "🐍" },
   { id: "flappy", name: "Flappy Bird", emoji: "🐦" },
+  { id: "trivia", name: "Trivia", emoji: "🧠" },
 ];
+
+// ─── Trivia Game ─────────────────────────────────────────────────────────────
+
+interface TriviaQuestion {
+  question: string;
+  options: string[];
+  correct: number; // index into options
+}
+
+const TRIVIA_QUESTIONS: TriviaQuestion[] = [
+  // België (land)
+  {
+    question: "Wat is de hoofdstad van België?",
+    options: ["Brussel", "Antwerpen", "Gent", "Luik"],
+    correct: 0,
+  },
+  {
+    question: "Hoeveel officiële talen heeft België?",
+    options: ["2", "3", "4", "1"],
+    correct: 1,
+  },
+  {
+    question: "Welke rivier stroomt door Brussel?",
+    options: ["Maas", "Schelde", "Zenne", "Leie"],
+    correct: 2,
+  },
+  {
+    question: "Wat is de munteenheid van België?",
+    options: ["Belgische frank", "Euro", "Pond", "Gulden"],
+    correct: 1,
+  },
+  {
+    question: "In welk jaar werd België onafhankelijk?",
+    options: ["1815", "1830", "1848", "1795"],
+    correct: 1,
+  },
+  {
+    question: "Welk gerecht is typisch Belgisch?",
+    options: ["Moules-frites", "Paella", "Stamppot", "Ratatouille"],
+    correct: 0,
+  },
+  {
+    question: "Hoeveel gewesten telt België?",
+    options: ["2", "3", "4", "5"],
+    correct: 1,
+  },
+  {
+    question: "Wat is het nationale voetbalelftal van België bijnaam?",
+    options: ["De Rode Duivels", "De Leewen", "De Vlaamse Leeuwen", "De Zwarte Panters"],
+    correct: 0,
+  },
+  // Het Goede Doel – België
+  {
+    question: "Door welke band werd het lied 'België' uitgebracht?",
+    options: ["Clouseau", "Het Goede Doel", "Gorki", "Ooit"],
+    correct: 1,
+  },
+  {
+    question: "In welk jaar verscheen het nummer 'België' van Het Goede Doel?",
+    options: ["1981", "1984", "1987", "1990"],
+    correct: 1,
+  },
+  {
+    question: "Welk refrein hoort bij 'België' van Het Goede Doel?",
+    options: [
+      "België, België, ik hou van jou",
+      "België, België, wat een land",
+      "België, België, waarom doe je zo",
+      "België, België, mooi en vrij",
+    ],
+    correct: 0,
+  },
+  {
+    question: "Wat was de nationaliteit van de leden van Het Goede Doel?",
+    options: ["Belgisch", "Nederlands", "Duits", "Frans"],
+    correct: 1,
+  },
+  {
+    question: "In welk genre valt 'België' van Het Goede Doel?",
+    options: ["Schlager", "Nederpop", "Punk", "Klassiek"],
+    correct: 1,
+  },
+  {
+    question: "Wie was de zanger van Het Goede Doel?",
+    options: ["Koen Wauters", "Henk Westbroek", "Herman van Veen", "Marco Borsato"],
+    correct: 1,
+  },
+  {
+    question: "Welk thema behandelt 'België' van Het Goede Doel?",
+    options: ["Oorlog", "Liefde voor het land", "Studentenleven", "Sport"],
+    correct: 1,
+  },
+  // Delftse Studenten Corps
+  {
+    question: "In welke stad is het Delftse Studenten Corps (DSC) gevestigd?",
+    options: ["Amsterdam", "Utrecht", "Delft", "Leiden"],
+    correct: 2,
+  },
+  {
+    question: "Aan welke universiteit is het Delftse Studenten Corps verbonden?",
+    options: ["Universiteit Leiden", "TU Delft", "Erasmus Universiteit", "Universiteit Utrecht"],
+    correct: 1,
+  },
+  {
+    question: "Wat is de gangbare term voor een eerstejaars lid bij een studentencorps?",
+    options: ["Aspirant", "Schachter", "Fresher", "Junior"],
+    correct: 1,
+  },
+  {
+    question: "Welk woord beschrijft de ontgroening bij een studentencorps?",
+    options: ["Introductieprogramma", "Ontgroeningsperiode", "Kennismakingsweek", "Feestweek"],
+    correct: 1,
+  },
+  {
+    question: "Hoe heet de jaarlijkse introductieperiode bij het DSC?",
+    options: ["Proefjaar", "Introductietijd", "Groentijd", "Welkomstweek"],
+    correct: 2,
+  },
+  {
+    question: "Wat staat 'corps' in studentencorpscontext voor?",
+    options: ["Een militaire eenheid", "Een studentenvereniging", "Een sportclub", "Een koor"],
+    correct: 1,
+  },
+  {
+    question: "Welke kleur heeft de pet die corpsleden traditioneel dragen?",
+    options: ["Rood", "Blauw", "Groen", "Zwart"],
+    correct: 1,
+  },
+  {
+    question: "Wat is de benaming voor een oud-lid van een studentencorps?",
+    options: ["Veteraan", "Senator", "Alumnus", "Prefect"],
+    correct: 2,
+  },
+  // Padel
+  {
+    question: "Op welk sport lijkt padel het meest?",
+    options: ["Badminton", "Tennis", "Squash", "Tafeltennis"],
+    correct: 1,
+  },
+  {
+    question: "Hoeveel spelers staan er aan elke kant bij padel?",
+    options: ["1", "2", "3", "4"],
+    correct: 1,
+  },
+  {
+    question: "Uit welk land stamt padel oorspronkelijk?",
+    options: ["Spanje", "Mexico", "Argentinië", "Portugal"],
+    correct: 1,
+  },
+  {
+    question: "Wat omgeeft een padelcourt?",
+    options: ["Netten", "Glazen wanden", "Hekken van staal", "Houten schotten"],
+    correct: 1,
+  },
+  {
+    question: "Met welk type racket wordt padel gespeeld?",
+    options: ["Een geveerd racket", "Een massief racket met gaatjes", "Een houten racket", "Een racket met snaren"],
+    correct: 1,
+  },
+  {
+    question: "Hoeveel punten levert een game bij padel op bij winst?",
+    options: ["15", "1", "2", "4"],
+    correct: 1,
+  },
+  {
+    question: "In welk land is padel momenteel het populairst?",
+    options: ["Mexico", "Spanje", "België", "Brazilië"],
+    correct: 1,
+  },
+  {
+    question: "Mag de bal bij padel na de bouncer tegen de glazen wand gaan?",
+    options: ["Nee, nooit", "Ja, dat is toegestaan", "Alleen bij de service", "Alleen in de tiebreak"],
+    correct: 1,
+  },
+  // Gent
+  {
+    question: "In welke provincie ligt Gent?",
+    options: ["West-Vlaanderen", "Oost-Vlaanderen", "Antwerpen", "Vlaams-Brabant"],
+    correct: 1,
+  },
+  {
+    question: "Welke rivier loopt door het centrum van Gent?",
+    options: ["Schelde en Leie", "Maas en Rijn", "Zenne en Dender", "Nete en Dijle"],
+    correct: 0,
+  },
+  {
+    question: "Hoe heet het bekende muziekfestival dat jaarlijks in Gent plaatsvindt?",
+    options: ["Rock Werchter", "Pukkelpop", "Gentse Feesten", "Tomorrowland"],
+    correct: 2,
+  },
+  {
+    question: "Welk beroemd altaarstuk hangt in de Sint-Baafskathedraal in Gent?",
+    options: ["De Nachtwacht", "Het Lam Gods", "De Aanbidding der Koningen", "De Schepping"],
+    correct: 1,
+  },
+  {
+    question: "Welke universiteit is gevestigd in Gent?",
+    options: ["KU Leuven", "Universiteit Gent", "VUB", "UAntwerpen"],
+    correct: 1,
+  },
+  {
+    question: "Wat is de bijnaam van de inwoners van Gent?",
+    options: ["Antwerpenaars", "Stroppendragers", "Bruggeling", "Gentenaren"],
+    correct: 1,
+  },
+  {
+    question: "Welk kasteel staat in het centrum van Gent?",
+    options: ["Kasteel van Laarne", "Gravensteen", "Beersel", "Gaasbeek"],
+    correct: 1,
+  },
+  {
+    question: "Welk gerecht is een bekende Gentse specialiteit?",
+    options: ["Gentse waterzooi", "Vlaamse stoofkarbonaden", "Luikse wafels", "Brusselse spruitjes"],
+    correct: 0,
+  },
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+type TriviaPhase = "answering" | "correct" | "wrong" | "done";
+
+function useTriviaGame(onGameOver: (score: number) => void) {
+  const [questions, setQuestions] = useState<TriviaQuestion[]>([]);
+  const [current, setCurrent] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [score, setScore] = useState(0);
+  const [phase, setPhase] = useState<TriviaPhase>("answering");
+  const [selected, setSelected] = useState<number | null>(null);
+  const [running, setRunning] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+
+  const reset = useCallback(() => {
+    setQuestions(shuffle(TRIVIA_QUESTIONS));
+    setCurrent(0);
+    setLives(3);
+    setScore(0);
+    setPhase("answering");
+    setSelected(null);
+    setRunning(true);
+    setGameOver(false);
+  }, []);
+
+  const answer = useCallback(
+    (idx: number) => {
+      if (phase !== "answering") return;
+      setSelected(idx);
+      const q = questions[current];
+      if (idx === q.correct) {
+        setScore((s) => s + 1);
+        setPhase("correct");
+      } else {
+        const newLives = lives - 1;
+        setLives(newLives);
+        setPhase("wrong");
+        if (newLives === 0) {
+          setGameOver(true);
+          setRunning(false);
+          setTimeout(() => onGameOver(score + 0), 1200);
+          return;
+        }
+      }
+      // Advance after short delay
+      setTimeout(() => {
+        const next = current + 1;
+        if (next >= questions.length) {
+          setGameOver(true);
+          setRunning(false);
+          setPhase("done");
+          onGameOver(score + (idx === q.correct ? 1 : 0));
+        } else {
+          setCurrent(next);
+          setSelected(null);
+          setPhase("answering");
+        }
+      }, 900);
+    },
+    [phase, questions, current, lives, score, onGameOver],
+  );
+
+  return {
+    question: questions[current] ?? null,
+    current,
+    total: questions.length,
+    lives,
+    score,
+    phase,
+    selected,
+    running,
+    gameOver,
+    reset,
+    answer,
+  };
+}
+
+function TriviaBoard({
+  triviaGame,
+}: {
+  triviaGame: ReturnType<typeof useTriviaGame>;
+}) {
+  const { question, current, total, lives, score, phase, selected, gameOver } =
+    triviaGame;
+
+  if (!question || gameOver) return null;
+
+  const heartColor = (i: number) =>
+    i < lives ? "text-red-400" : "text-white/20";
+
+  const optionStyle = (idx: number) => {
+    if (phase === "answering") {
+      return "bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] cursor-pointer";
+    }
+    if (idx === question.correct) return "bg-emerald-600/50 border-emerald-400/60";
+    if (idx === selected && idx !== question.correct) return "bg-red-600/40 border-red-400/50";
+    return "bg-white/[0.03] opacity-50";
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <Heart key={i} size={18} className={heartColor(i)} fill={i < lives ? "currentColor" : "none"} />
+          ))}
+        </div>
+        <span className="text-xs text-white/40 tabular-nums">
+          {current + 1} / {total}
+        </span>
+        <Badge variant="default">Score: {score}</Badge>
+      </div>
+
+      {/* Question */}
+      <p className="text-sm font-medium text-white/90 leading-relaxed">
+        {question.question}
+      </p>
+
+      {/* Options */}
+      <div className="space-y-2">
+        {question.options.map((opt, idx) => (
+          <button
+            key={idx}
+            onClick={() => triviaGame.answer(idx)}
+            disabled={phase !== "answering"}
+            className={`w-full text-left px-4 py-3 rounded-xl border border-white/[0.08] text-sm text-white/80 transition-colors ${optionStyle(idx)}`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+
+      {/* Feedback */}
+      {phase === "correct" && (
+        <p className="text-center text-sm font-semibold text-emerald-400">✓ Correct!</p>
+      )}
+      {phase === "wrong" && (
+        <p className="text-center text-sm font-semibold text-red-400">✗ Fout!</p>
+      )}
+    </div>
+  );
+}
 
 // ─── Snake Game ──────────────────────────────────────────────────────────────
 
@@ -497,6 +866,7 @@ export default function Minigames() {
 
   const snakeGame = useSnake(handleGameOver);
   const flappyGame = useFlappyBird(handleGameOver);
+  const triviaGame = useTriviaGame(handleGameOver);
   const [gameOverReady, setGameOverReady] = useState(false);
 
   const startGame = () => {
@@ -504,12 +874,14 @@ export default function Minigames() {
     setGameOverReady(false);
     if (selectedGame?.id === "snake") snakeGame.reset();
     else if (selectedGame?.id === "flappy") flappyGame.reset();
+    else if (selectedGame?.id === "trivia") triviaGame.reset();
   };
 
   // Delay-enable buttons after game over to prevent accidental taps
   const isGameOverNow =
     (selectedGame?.id === "snake" && snakeGame.gameOver) ||
-    (selectedGame?.id === "flappy" && flappyGame.gameOver);
+    (selectedGame?.id === "flappy" && flappyGame.gameOver) ||
+    (selectedGame?.id === "trivia" && triviaGame.gameOver);
   useEffect(() => {
     if (!isGameOverNow) {
       setGameOverReady(false);
@@ -722,7 +1094,11 @@ export default function Minigames() {
                 </div>
 
                 <Button onClick={startGame} className="w-full">
-                  {(selectedGame.id === "snake" ? snakeGame.gameOver : flappyGame.gameOver)
+                  {(selectedGame.id === "snake"
+                    ? snakeGame.gameOver
+                    : selectedGame.id === "flappy"
+                      ? flappyGame.gameOver
+                      : triviaGame.gameOver)
                     ? "Play Again"
                     : "Start Game"}
                 </Button>
@@ -737,16 +1113,25 @@ export default function Minigames() {
                 {/* In-game view */}
                 {(() => {
                   const currentScore =
-                    selectedGame.id === "snake" ? snakeGame.score : flappyGame.score;
+                    selectedGame.id === "snake"
+                      ? snakeGame.score
+                      : selectedGame.id === "flappy"
+                        ? flappyGame.score
+                        : triviaGame.score;
                   const isGameOver =
                     selectedGame.id === "snake"
                       ? snakeGame.gameOver
-                      : flappyGame.gameOver;
+                      : selectedGame.id === "flappy"
+                        ? flappyGame.gameOver
+                        : triviaGame.gameOver;
 
                   return (
                     <>
                       <div className="flex items-center justify-between mb-3">
-                        <Badge variant="default">Score: {currentScore}</Badge>
+                        {selectedGame.id !== "trivia" && (
+                          <Badge variant="default">Score: {currentScore}</Badge>
+                        )}
+                        <div className="flex-1" />
                         <button
                           onClick={() => setPlaying(false)}
                           className="text-white/30 hover:text-white/60 transition-colors p-1"
@@ -773,6 +1158,9 @@ export default function Minigames() {
                             </div>
                           )}
                         </div>
+                      )}
+                      {selectedGame.id === "trivia" && !triviaGame.gameOver && (
+                        <TriviaBoard triviaGame={triviaGame} />
                       )}
 
                       {isGameOver && (
