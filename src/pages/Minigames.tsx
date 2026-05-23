@@ -42,11 +42,8 @@ interface GameDef {
 const GAMES: GameDef[] = [
   { id: "snake", name: "Snake", emoji: "🐍" },
   { id: "flappy", name: "Flappy Bird", emoji: "🐦" },
-<<<<<<< HEAD
   { id: "trivia", name: "Trivia", emoji: "🧠" },
-=======
   { id: "chess", name: "Chess", emoji: "♟️" },
->>>>>>> origin/main
 ];
 
 // ─── Trivia Game ─────────────────────────────────────────────────────────────
@@ -1284,11 +1281,8 @@ export default function Minigames() {
 
   const snakeGame = useSnake(handleGameOver);
   const flappyGame = useFlappyBird(handleGameOver);
-<<<<<<< HEAD
   const triviaGame = useTriviaGame(handleGameOver);
-=======
   const chessGame = useChess(handleGameOver);
->>>>>>> origin/main
   const [gameOverReady, setGameOverReady] = useState(false);
 
   const startGame = () => {
@@ -1296,22 +1290,16 @@ export default function Minigames() {
     setGameOverReady(false);
     if (selectedGame?.id === "snake") snakeGame.reset();
     else if (selectedGame?.id === "flappy") flappyGame.reset();
-<<<<<<< HEAD
     else if (selectedGame?.id === "trivia") triviaGame.reset();
-=======
     else if (selectedGame?.id === "chess") chessGame.reset();
->>>>>>> origin/main
   };
 
   // Delay-enable buttons after game over to prevent accidental taps
   const isGameOverNow =
     (selectedGame?.id === "snake" && snakeGame.gameOver) ||
     (selectedGame?.id === "flappy" && flappyGame.gameOver) ||
-<<<<<<< HEAD
-    (selectedGame?.id === "trivia" && triviaGame.gameOver);
-=======
+    (selectedGame?.id === "trivia" && triviaGame.gameOver) ||
     (selectedGame?.id === "chess" && chessGame.gameOver);
->>>>>>> origin/main
   useEffect(() => {
     if (!isGameOverNow) {
       setGameOverReady(false);
@@ -1524,15 +1512,13 @@ export default function Minigames() {
                 </div>
 
                 <Button onClick={startGame} className="w-full">
-<<<<<<< HEAD
                   {(selectedGame.id === "snake"
                     ? snakeGame.gameOver
                     : selectedGame.id === "flappy"
                       ? flappyGame.gameOver
-                      : triviaGame.gameOver)
-=======
-                  {(selectedGame.id === "snake" ? snakeGame.gameOver : selectedGame.id === "chess" ? chessGame.gameOver : flappyGame.gameOver)
->>>>>>> origin/main
+                      : selectedGame.id === "trivia"
+                        ? triviaGame.gameOver
+                        : chessGame.gameOver)
                     ? "Play Again"
                     : "Start Game"}
                 </Button>
@@ -1547,42 +1533,32 @@ export default function Minigames() {
                 {/* In-game view */}
                 {(() => {
                   const currentScore =
-<<<<<<< HEAD
                     selectedGame.id === "snake"
                       ? snakeGame.score
                       : selectedGame.id === "flappy"
                         ? flappyGame.score
-                        : triviaGame.score;
+                        : selectedGame.id === "trivia"
+                          ? triviaGame.score
+                          : chessGame.score;
                   const isGameOver =
                     selectedGame.id === "snake"
                       ? snakeGame.gameOver
                       : selectedGame.id === "flappy"
                         ? flappyGame.gameOver
-                        : triviaGame.gameOver;
+                        : selectedGame.id === "trivia"
+                          ? triviaGame.gameOver
+                          : chessGame.gameOver;
 
                   return (
                     <>
                       <div className={`flex items-center mb-3 ${selectedGame.id !== "trivia" ? "justify-between" : "justify-end"}`}>
                         {selectedGame.id !== "trivia" && (
                           <Badge variant="default">Score: {currentScore}</Badge>
-=======
-                    selectedGame.id === "snake" ? snakeGame.score : selectedGame.id === "chess" ? chessGame.score : flappyGame.score;
-                  const isGameOver =
-                    selectedGame.id === "snake"
-                      ? snakeGame.gameOver
-                      : selectedGame.id === "chess"
-                        ? chessGame.gameOver
-                        : flappyGame.gameOver;
-
-                  return (
-                    <>
-                      <div className="flex items-center justify-between mb-3">
-                        <Badge variant="default">Score: {currentScore}</Badge>
+                        )}
                         {selectedGame.id === "chess" && !chessGame.gameOver && (
                           <span className="text-xs text-white/40">
                             {chessGame.turn === "w" ? "Your turn" : "Thinking..."}
                           </span>
->>>>>>> origin/main
                         )}
                         <button
                           onClick={() => setPlaying(false)}
@@ -1611,10 +1587,9 @@ export default function Minigames() {
                           )}
                         </div>
                       )}
-<<<<<<< HEAD
                       {selectedGame.id === "trivia" && !triviaGame.gameOver && (
                         <TriviaBoard triviaGame={triviaGame} />
-=======
+                      )}
                       {selectedGame.id === "chess" && (
                         <ChessBoard
                           board={chessGame.board}
@@ -1625,7 +1600,6 @@ export default function Minigames() {
                           turn={chessGame.turn}
                           onSelect={chessGame.selectSquare}
                         />
->>>>>>> origin/main
                       )}
 
                       {isGameOver && (
