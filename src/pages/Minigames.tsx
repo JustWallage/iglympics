@@ -468,6 +468,10 @@ type PieceColor = "w" | "b";
 type PieceType = "K" | "Q" | "R" | "B" | "N" | "P";
 type ChessPiece = { color: PieceColor; type: PieceType };
 type Square = ChessPiece | null;
+
+const BOARD_CENTER = 3.5;
+const CENTER_BONUS_WEIGHT = 0.05;
+const AI_MOVE_DELAY_MS = 400;
 type Board = Square[][];
 
 const PIECE_VALUES: Record<PieceType, number> = {
@@ -593,7 +597,7 @@ function evaluateBoard(board: Board): number {
       if (!p) continue;
       const val = PIECE_VALUES[p.type];
       // Add small positional bonus for center control
-      const centerBonus = (p.type !== "K") ? (3.5 - Math.abs(c - 3.5)) * 0.05 + (3.5 - Math.abs(r - 3.5)) * 0.05 : 0;
+      const centerBonus = (p.type !== "K") ? (BOARD_CENTER - Math.abs(c - BOARD_CENTER)) * CENTER_BONUS_WEIGHT + (BOARD_CENTER - Math.abs(r - BOARD_CENTER)) * CENTER_BONUS_WEIGHT : 0;
       score += (p.color === "b" ? 1 : -1) * (val + centerBonus);
     }
   return score;
@@ -770,7 +774,7 @@ function useChess(onGameOver: (score: number) => void) {
         return;
       }
       setTurn("w");
-    }, 400);
+    }, AI_MOVE_DELAY_MS);
 
     return () => clearTimeout(timeout);
   }, [running, gameOver, turn, board, checkGameState, endGame]);
