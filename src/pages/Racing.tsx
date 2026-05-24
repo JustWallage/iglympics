@@ -800,7 +800,10 @@ function draw3DFrame(
 
     const perspective = 300 / depth;
     const sx = W / 2 + rx * perspective;
-    const sy = H * 0.45 - 20 * perspective + (H * 0.55) * (1 - Math.min(perspective, 3) / 3);
+    // Project Y: horizon at top, close objects near car at bottom
+    const horizon = H * 0.35;
+    const carScreenY = H * 0.72;
+    const sy = horizon + (carScreenY - horizon) * Math.min(perspective / 5, 1);
 
     return { sx, sy, scale: Math.min(perspective * 0.5, 2) };
   };
