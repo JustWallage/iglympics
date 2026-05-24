@@ -1,0 +1,60 @@
+// POST /api/racing/game/join - join an existing race
+// GET /api/racing/game/join - get race state (via ?gameId=)
+
+export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const user = (context.data as { user?: { id: number; name: string } }).user;
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!context.env.RACING_GAME_DO) {
+    return Response.json({ error: "Racing not available" }, { status: 503 });
+  }
+
+  const url = new URL(context.request.url);
+  const gameId = url.searchParams.get("gameId");
+  if (!gameId) {
+    return Response.json({ error: "Missing gameId" }, { status: 400 });
+  }
+
+  const doId = context.env.RACING_GAME_DO.idFromName(gameId);
+  const doStub = context.env.RACING_GAME_DO.get(doId);
+
+  const res = await doStub.fetch(new Request("https://internal/join", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: user.id, userName: user.name }),
+  }));
+
+  if (!res.ok) {
+    const err = await res.json() as { error?: string };
+    return Response.json(err, { status: res.status });
+  }
+
+  const gameState = await res.json() as { players: { id: number; name: string; isAI: boolean }[]; status: string };
+
+  await context.env.DB.prepare(
+    `UPDATE racing_games SET status = ?, players = ? WHERE id = ?`
+  ).bind(gameState.status, JSON.stringify(gameState.players), gameId).run();
+
+  return Response.json({ gameId, ...gameState });
+};
+
+export const onRequestGet: PagesFunction<Env> = async (context) => {
+  if (!context.env.RACING_GAME_DO) {
+    return Response.json({ error: "Racing not available" }, { status: 503 });
+  }
+
+  const url = new URL(context.request.url);
+  const gameId = url.searchParams.get("gameId");
+  if (!gameId) {
+    return Response.json({ error: "Missing gameId" }, { status: 400 });
+  }
+
+  const doId = context.env.RACING_GAME_DO.idFromName(gameId);
+  const doStub = context.env.RACING_GAME_DO.get(doId);
+
+  const res = await doStub.fetch(new Request("https://internal/state", { method: "GET" }));
+  const gameState = await res.json();
+  return Response.json(gameState);
+};
