@@ -92,12 +92,31 @@ export default function Snaps() {
                 onClick={() => setViewingGroupIndex(idx)}
                 className="relative aspect-[3/4] rounded-2xl overflow-hidden group"
               >
-                {/* Story image */}
-                <img
-                  src={imageUrl}
-                  alt={`${group.user_name}'s snap`}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                {/* Story thumbnail */}
+                {latestStory?.media_type === "video" ? (
+                  <>
+                    <video
+                      src={imageUrl}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="white">
+                          <polygon points="2,0 12,7 2,14" />
+                        </svg>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <img
+                    src={imageUrl}
+                    alt={`${group.user_name}'s snap`}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
                 {/* Dark overlay for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
                 {/* Caption overlay */}
