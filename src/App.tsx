@@ -17,6 +17,7 @@ import Racing from "./pages/Racing";
 import Snaps from "./pages/Snaps";
 import Bets from "./pages/Bets";
 import Chwazi from "./pages/Chwazi";
+import Mexen from "./pages/Mexen";
 import AdminMatches from "./pages/AdminMatches";
 import Layout from "./components/Layout";
 
@@ -50,6 +51,7 @@ export default function App() {
               <Route path="games" element={<Minigames />} />
               <Route path="games/chess-pvp" element={<ChessPvP />} />
               <Route path="games/racing" element={<Racing />} />
+              <Route path="games/mexen" element={<Mexen />} />
               <Route path="snaps" element={<Snaps />} />
               <Route path="bets" element={<Bets />} />
               <Route path="chwazi" element={<Chwazi />} />

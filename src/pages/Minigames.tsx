@@ -2585,6 +2585,23 @@ export default function Minigames() {
             </div>
           </Card>
         </Link>
+
+        {/* Mexen link */}
+        <Link to="/games/mexen">
+          <Card className="cursor-pointer active:bg-white/[0.06] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎲</span>
+              <div>
+                <div className="text-sm font-semibold text-white/90">
+                  Mexen
+                </div>
+                <div className="text-xs text-white/40">
+                  Dobbelspel — doorjagen en scoren!
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Link>
       </div>
 
       {/* Game modal */}

@@ -6,6 +6,7 @@ interface Env {
   SCOREBOARD_DO?: DurableObjectNamespace;
   CHESS_GAME_DO?: DurableObjectNamespace;
   RACING_GAME_DO?: DurableObjectNamespace;
+  MEXEN_GAME_DO?: DurableObjectNamespace;
   STORY_IMAGES: R2Bucket;
   JWT_SECRET: string;
   ADMIN_NAMES: string;
