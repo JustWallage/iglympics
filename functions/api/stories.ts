@@ -20,7 +20,6 @@ interface UserStories {
   stories: Omit<StoryRow, "user_id" | "user_name">[];
 }
 
-
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { results } = await context.env.DB.prepare(
     `SELECT s.id, s.user_id, u.name AS user_name, s.image_key, s.media_type,

@@ -38,7 +38,6 @@ export default function CreateStory({ onClose, onCreated }: Props) {
 
     setFile(selected);
     setError(null);
-    if (preview) URL.revokeObjectURL(preview);
     const url = URL.createObjectURL(selected);
     setPreview(url);
   };

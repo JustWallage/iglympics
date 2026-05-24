@@ -147,7 +147,6 @@ export default function StoryViewer({ groups, initialGroupIndex, onClose }: Prop
           className="w-full h-full object-contain"
           autoPlay
           playsInline
-          muted={false}
         />
       ) : (
         <img
