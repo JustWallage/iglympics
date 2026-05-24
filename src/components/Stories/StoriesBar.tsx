@@ -110,7 +110,8 @@ export default function StoriesBar() {
       {/* Viewer overlay */}
       {viewingGroup && (
         <StoryViewer
-          group={viewingGroup}
+          groups={sorted}
+          initialGroupIndex={sorted.indexOf(viewingGroup)}
           onClose={() => setViewingGroup(null)}
         />
       )}
