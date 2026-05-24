@@ -28,27 +28,42 @@ interface RaceState {
   totalLaps: number;
 }
 
-const TRACK_WIDTH = 800;
+const TRACK_WIDTH = 900;
 const TRACK_HEIGHT = 600;
 const TOTAL_LAPS = 3;
-const AI_BASE_SPEED = 3.5;
-const AI_SPEED_VARIATION = 0.4;
-const AI_TURN_FACTOR = 0.08;
+const AI_BASE_SPEED = 4.0;
+const AI_SPEED_VARIATION = 0.5;
+const AI_TURN_FACTOR = 0.1;
 const SERVER_TICK_MS = 50;
+
+// Winding track waypoints for AI pathfinding
+const TRACK_WAYPOINTS = [
+  { x: 450, y: 520 }, { x: 550, y: 520 }, { x: 650, y: 510 },
+  { x: 730, y: 480 }, { x: 790, y: 430 }, { x: 820, y: 370 },
+  { x: 810, y: 300 }, { x: 770, y: 250 }, { x: 720, y: 220 },
+  { x: 650, y: 180 }, { x: 580, y: 140 }, { x: 500, y: 120 },
+  { x: 420, y: 130 }, { x: 350, y: 160 }, { x: 300, y: 200 },
+  { x: 270, y: 250 }, { x: 260, y: 300 },
+  { x: 230, y: 350 }, { x: 180, y: 380 }, { x: 140, y: 410 },
+  { x: 100, y: 440 }, { x: 90, y: 470 }, { x: 110, y: 500 },
+  { x: 160, y: 520 }, { x: 230, y: 530 }, { x: 320, y: 535 },
+  { x: 400, y: 530 },
+];
+
 const CHECKPOINTS = [
-  { x: 400, y: 100, radius: 60 },
-  { x: 700, y: 300, radius: 60 },
-  { x: 400, y: 500, radius: 60 },
-  { x: 100, y: 300, radius: 60 },
+  { x: 820, y: 370, radius: 55 },
+  { x: 500, y: 120, radius: 55 },
+  { x: 140, y: 410, radius: 55 },
+  { x: 320, y: 535, radius: 55 },
 ];
 
 const AI_NAMES = ["Bowser", "Toad", "Yoshi", "Peach", "Luigi", "DK"];
 
 function createStartPosition(index: number): { x: number; y: number; angle: number } {
-  // Stagger start positions along the start line
-  const baseX = 350 + (index % 2) * 80;
-  const baseY = 280 + Math.floor(index / 2) * 50;
-  return { x: baseX, y: baseY, angle: -Math.PI / 2 };
+  // Stagger start positions along the start straight
+  const baseX = 450 + (index % 2) * 40;
+  const baseY = 520 + Math.floor(index / 2) * 30;
+  return { x: baseX, y: baseY, angle: 0 }; // facing right along start straight
 }
 
 function createAIPlayers(count: number, startIndex: number): PlayerState[] {
@@ -275,10 +290,24 @@ export class RacingGameDO {
     for (const player of this.raceState.players) {
       if (!player.isAI || player.finished) continue;
 
-      // AI drives toward the next checkpoint
-      const targetCP = CHECKPOINTS[player.checkpoint % CHECKPOINTS.length];
-      const dx = targetCP.x - player.x;
-      const dy = targetCP.y - player.y;
+      // AI follows track waypoints for smooth racing on the winding track
+      // Determine closest waypoint and target the next one
+      let closestWP = 0;
+      let closestDist = Infinity;
+      for (let i = 0; i < TRACK_WAYPOINTS.length; i++) {
+        const wp = TRACK_WAYPOINTS[i];
+        const d = Math.sqrt((player.x - wp.x) ** 2 + (player.y - wp.y) ** 2);
+        if (d < closestDist) {
+          closestDist = d;
+          closestWP = i;
+        }
+      }
+      // Target 2-3 waypoints ahead for smoother pathing
+      const targetIdx = (closestWP + 2 + Math.abs(player.id) % 2) % TRACK_WAYPOINTS.length;
+      const targetWP = TRACK_WAYPOINTS[targetIdx];
+
+      const dx = targetWP.x - player.x;
+      const dy = targetWP.y - player.y;
       const targetAngle = Math.atan2(dy, dx);
 
       // Smoothly turn toward target
@@ -287,9 +316,11 @@ export class RacingGameDO {
       while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
       player.angle += angleDiff * AI_TURN_FACTOR;
 
-      // Vary speed slightly per AI to make it interesting
+      // Vary speed - slow down in tight turns
+      const turnSharpness = Math.abs(angleDiff);
       const baseSpeed = AI_BASE_SPEED + (Math.abs(player.id) % 3) * AI_SPEED_VARIATION;
-      player.speed = baseSpeed + Math.sin(Date.now() / 1000 + player.id) * 0.5;
+      const turnSlowdown = Math.max(0.5, 1.0 - turnSharpness * 0.5);
+      player.speed = baseSpeed * turnSlowdown + Math.sin(Date.now() / 1000 + player.id) * 0.3;
 
       // Move
       player.x += Math.cos(player.angle) * player.speed;
@@ -300,6 +331,7 @@ export class RacingGameDO {
       player.y = Math.max(20, Math.min(TRACK_HEIGHT - 20, player.y));
 
       // Check checkpoint
+      const targetCP = CHECKPOINTS[player.checkpoint % CHECKPOINTS.length];
       const dist = Math.sqrt((player.x - targetCP.x) ** 2 + (player.y - targetCP.y) ** 2);
       if (dist < targetCP.radius) {
         player.checkpoint++;
