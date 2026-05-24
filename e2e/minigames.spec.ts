@@ -124,6 +124,38 @@ test.describe("Minigames Page (authenticated)", () => {
     // Tap-to-flap button should be visible
     await expect(page.locator('button:has-text("Tap to flap")')).toBeVisible();
   });
+
+  test("should open lingo game modal and start game", async ({
+    loggedInPage: page,
+  }) => {
+    await page.click('nav a:has-text("Games")');
+    await expect(page.locator("text=Lingo")).toBeVisible();
+
+    await page.locator("text=Lingo").click();
+    await expect(page.locator("h2:has-text('Lingo')")).toBeVisible();
+    await expect(page.locator("text=High Scores")).toBeVisible();
+    await expect(page.locator('button:has-text("Start Game")')).toBeVisible();
+
+    await page.click('button:has-text("Start Game")');
+    await expect(page.getByText(/^Score: \d+$/)).toBeVisible();
+    await expect(page.locator('input[aria-label="Lingo guess"]')).toBeVisible();
+    await expect(page.locator('button:has-text("Submit Guess")')).toBeVisible();
+  });
+
+  test("should submit lingo score via API and appear in scoreboard", async ({
+    loggedInPage: page,
+  }) => {
+    const res = await page.request.post("/api/minigame-scores", {
+      data: { game: "lingo", score: 25 },
+    });
+    expect(res.ok()).toBe(true);
+
+    await page.click('nav a:has-text("Games")');
+    await expect(page.locator("text=High score: 25")).toBeVisible();
+
+    await page.locator("text=Lingo").click();
+    await expect(page.getByText("25", { exact: true })).toBeVisible();
+  });
 });
 
 baseTest.describe("Minigames Page (unauthenticated)", () => {

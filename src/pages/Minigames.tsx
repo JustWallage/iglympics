@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
 import {
   Trophy,
   X,
@@ -43,9 +44,280 @@ interface GameDef {
 const GAMES: GameDef[] = [
   { id: "snake", name: "Snake", emoji: "🐍" },
   { id: "flappy", name: "Flappy Bird", emoji: "🐦" },
+  { id: "lingo", name: "Lingo", emoji: "🔤" },
   { id: "trivia", name: "Trivia", emoji: "🧠" },
   { id: "chess", name: "Chess", emoji: "♟️" },
 ];
+
+// ─── Lingo Game ──────────────────────────────────────────────────────────────
+
+const LINGO_WORD_LENGTH = 5;
+const LINGO_INPUT_LENGTH = LINGO_WORD_LENGTH - 1;
+const LINGO_MAX_ATTEMPTS = 5;
+const LINGO_WORDS = [
+  "APPEL",
+  "BROOD",
+  "DROOM",
+  "FIETS",
+  "GROEN",
+  "KLANK",
+  "KUNST",
+  "LUNCH",
+  "MANGO",
+  "PIZZA",
+  "PLANT",
+  "STOEL",
+  "TREIN",
+  "VOGEL",
+  "WAFEL",
+  "WATER",
+  "ZOMER",
+] as const;
+
+type LingoLetterResult = "correct" | "present" | "absent";
+
+interface LingoGuess {
+  word: string;
+  result: LingoLetterResult[];
+}
+
+function pickLingoWord(previousWord?: string) {
+  if (LINGO_WORDS.length <= 1) return LINGO_WORDS[0];
+  let next = LINGO_WORDS[Math.floor(Math.random() * LINGO_WORDS.length)];
+  while (next === previousWord) {
+    next = LINGO_WORDS[Math.floor(Math.random() * LINGO_WORDS.length)];
+  }
+  return next;
+}
+
+function scoreLingoGuess(guess: string, answer: string): LingoLetterResult[] {
+  const result: LingoLetterResult[] = Array(LINGO_WORD_LENGTH).fill("absent");
+  const remaining = answer.split("");
+
+  for (let i = 0; i < LINGO_WORD_LENGTH; i++) {
+    if (guess[i] === answer[i]) {
+      result[i] = "correct";
+      remaining[i] = "";
+    }
+  }
+
+  for (let i = 0; i < LINGO_WORD_LENGTH; i++) {
+    if (result[i] === "correct") continue;
+    const matchIndex = remaining.indexOf(guess[i]);
+    if (matchIndex !== -1) {
+      result[i] = "present";
+      remaining[matchIndex] = "";
+    }
+  }
+
+  return result;
+}
+
+function useLingo(onGameOver: (score: number) => void) {
+  const [answer, setAnswer] = useState<string>(LINGO_WORDS[0]);
+  const [guesses, setGuesses] = useState<LingoGuess[]>([]);
+  const [currentGuess, setCurrentGuess] = useState("");
+  const [score, setScore] = useState(0);
+  const [round, setRound] = useState(1);
+  const [running, setRunning] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [message, setMessage] = useState("Guess the 5-letter word.");
+
+  const scoreRef = useRef(0);
+  const timeoutRef = useRef<number | null>(null);
+
+  scoreRef.current = score;
+
+  const clearPendingTimeout = useCallback(() => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  const startRound = useCallback((previousWord?: string) => {
+    setAnswer(pickLingoWord(previousWord));
+    setGuesses([]);
+    setCurrentGuess("");
+    setRound((r) => r + 1);
+    setMessage("Correct! Next word.");
+  }, []);
+
+  const reset = useCallback(() => {
+    clearPendingTimeout();
+    setAnswer(pickLingoWord());
+    setGuesses([]);
+    setCurrentGuess("");
+    setScore(0);
+    setRound(1);
+    setRunning(true);
+    setGameOver(false);
+    setMessage("Guess the 5-letter word.");
+    scoreRef.current = 0;
+  }, [clearPendingTimeout]);
+
+  const updateGuess = useCallback((value: string) => {
+    const sanitized = value
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+      .slice(0, LINGO_INPUT_LENGTH);
+    setCurrentGuess(sanitized);
+  }, []);
+
+  const submitGuess = useCallback(() => {
+    if (!running || gameOver) return;
+
+    if (currentGuess.length !== LINGO_INPUT_LENGTH) {
+      setMessage("Type the last 4 letters.");
+      return;
+    }
+
+    const fullGuess = `${answer[0]}${currentGuess}`;
+    const result = scoreLingoGuess(fullGuess, answer);
+    const nextGuesses = [...guesses, { word: fullGuess, result }];
+    setGuesses(nextGuesses);
+    setCurrentGuess("");
+
+    if (fullGuess === answer) {
+      const points = LINGO_MAX_ATTEMPTS - guesses.length;
+      const nextScore = scoreRef.current + points;
+      setScore(nextScore);
+      scoreRef.current = nextScore;
+      clearPendingTimeout();
+      timeoutRef.current = window.setTimeout(() => {
+        startRound(answer);
+      }, 900);
+      return;
+    }
+
+    if (nextGuesses.length >= LINGO_MAX_ATTEMPTS) {
+      setRunning(false);
+      setGameOver(true);
+      setMessage(`Game Over! The word was ${answer}.`);
+      onGameOver(scoreRef.current);
+      return;
+    }
+
+    setMessage(`${LINGO_MAX_ATTEMPTS - nextGuesses.length} attempts left.`);
+  }, [
+    answer,
+    clearPendingTimeout,
+    currentGuess,
+    gameOver,
+    guesses,
+    onGameOver,
+    running,
+    startRound,
+  ]);
+
+  useEffect(() => () => clearPendingTimeout(), [clearPendingTimeout]);
+
+  return {
+    answer,
+    guesses,
+    currentGuess,
+    score,
+    round,
+    running,
+    gameOver,
+    message,
+    reset,
+    updateGuess,
+    submitGuess,
+  };
+}
+
+function LingoBoard({
+  lingoGame,
+}: {
+  lingoGame: ReturnType<typeof useLingo>;
+}) {
+  const { answer, guesses, currentGuess, round, gameOver, message } = lingoGame;
+  const attemptsLeft = LINGO_MAX_ATTEMPTS - guesses.length;
+
+  const rows: { letter: string; state: LingoLetterResult | null }[][] = Array.from(
+    { length: LINGO_MAX_ATTEMPTS },
+    (_, index) => {
+    const guess = guesses[index];
+    if (guess) {
+      return guess.word.split("").map((letter, letterIndex) => ({
+        letter,
+        state: guess.result[letterIndex],
+      }));
+    }
+
+    if (!gameOver && index === guesses.length) {
+      const draftLetters = [answer[0], ...currentGuess.split("")];
+      return Array.from({ length: LINGO_WORD_LENGTH }, (_, letterIndex) => ({
+        letter: draftLetters[letterIndex] ?? "",
+        state: letterIndex === 0 ? "correct" : null,
+      }));
+    }
+
+    return Array.from({ length: LINGO_WORD_LENGTH }, (_, letterIndex) => ({
+      letter: letterIndex === 0 ? answer[0] : "",
+      state: letterIndex === 0 ? "correct" : null,
+    }));
+    },
+  );
+
+  const tileClass = (state: LingoLetterResult | null) => {
+    if (state === "correct") return "border-emerald-400/70 bg-emerald-500/30";
+    if (state === "present") return "border-amber-300/70 bg-amber-500/30";
+    if (state === "absent") return "border-white/[0.08] bg-white/[0.05]";
+    return "border-white/[0.08] bg-white/[0.03]";
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between text-xs text-white/50">
+        <span>Round {round}</span>
+        <span>{attemptsLeft} attempts left</span>
+      </div>
+
+      <div className="grid gap-2">
+        {rows.map((row, rowIndex) => (
+          <div key={rowIndex} className="grid grid-cols-5 gap-2">
+            {row.map((tile, tileIndex) => (
+              <div
+                key={`${rowIndex}-${tileIndex}`}
+                className={`flex aspect-square items-center justify-center rounded-xl border text-base font-semibold text-white/90 ${tileClass(tile.state)}`}
+              >
+                {tile.letter}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {!gameOver && (
+        <form
+          className="space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            lingoGame.submitGuess();
+          }}
+        >
+          <Input
+            value={currentGuess}
+            onChange={(e) => lingoGame.updateGuess(e.target.value)}
+            placeholder="Type the last 4 letters"
+            inputMode="text"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            maxLength={LINGO_INPUT_LENGTH}
+            aria-label="Lingo guess"
+          />
+          <Button type="submit" className="w-full">
+            Submit Guess
+          </Button>
+        </form>
+      )}
+
+      <p className="text-center text-sm text-white/60">{message}</p>
+    </div>
+  );
+}
 
 // ─── Trivia Game ─────────────────────────────────────────────────────────────
 
@@ -1282,6 +1554,7 @@ export default function Minigames() {
 
   const snakeGame = useSnake(handleGameOver);
   const flappyGame = useFlappyBird(handleGameOver);
+  const lingoGame = useLingo(handleGameOver);
   const triviaGame = useTriviaGame(handleGameOver);
   const chessGame = useChess(handleGameOver);
   const [gameOverReady, setGameOverReady] = useState(false);
@@ -1291,6 +1564,7 @@ export default function Minigames() {
     setGameOverReady(false);
     if (selectedGame?.id === "snake") snakeGame.reset();
     else if (selectedGame?.id === "flappy") flappyGame.reset();
+    else if (selectedGame?.id === "lingo") lingoGame.reset();
     else if (selectedGame?.id === "trivia") triviaGame.reset();
     else if (selectedGame?.id === "chess") chessGame.reset();
   };
@@ -1299,6 +1573,7 @@ export default function Minigames() {
   const isGameOverNow =
     (selectedGame?.id === "snake" && snakeGame.gameOver) ||
     (selectedGame?.id === "flappy" && flappyGame.gameOver) ||
+    (selectedGame?.id === "lingo" && lingoGame.gameOver) ||
     (selectedGame?.id === "trivia" && triviaGame.gameOver) ||
     (selectedGame?.id === "chess" && chessGame.gameOver);
   useEffect(() => {
@@ -1534,6 +1809,8 @@ export default function Minigames() {
                     ? snakeGame.gameOver
                     : selectedGame.id === "flappy"
                       ? flappyGame.gameOver
+                      : selectedGame.id === "lingo"
+                        ? lingoGame.gameOver
                       : selectedGame.id === "trivia"
                         ? triviaGame.gameOver
                         : chessGame.gameOver)
@@ -1555,6 +1832,8 @@ export default function Minigames() {
                       ? snakeGame.score
                       : selectedGame.id === "flappy"
                         ? flappyGame.score
+                        : selectedGame.id === "lingo"
+                          ? lingoGame.score
                         : selectedGame.id === "trivia"
                           ? triviaGame.score
                           : chessGame.score;
@@ -1563,6 +1842,8 @@ export default function Minigames() {
                       ? snakeGame.gameOver
                       : selectedGame.id === "flappy"
                         ? flappyGame.gameOver
+                        : selectedGame.id === "lingo"
+                          ? lingoGame.gameOver
                         : selectedGame.id === "trivia"
                           ? triviaGame.gameOver
                           : chessGame.gameOver;
@@ -1604,6 +1885,9 @@ export default function Minigames() {
                             </div>
                           )}
                         </div>
+                      )}
+                      {selectedGame.id === "lingo" && (
+                        <LingoBoard lingoGame={lingoGame} />
                       )}
                       {selectedGame.id === "trivia" && !triviaGame.gameOver && (
                         <TriviaBoard triviaGame={triviaGame} />
