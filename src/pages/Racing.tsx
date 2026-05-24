@@ -753,23 +753,25 @@ function draw3DFrame(
   // Sky gradient (dynamic based on speed)
   const speedRatio = Math.min(Math.abs(localPlayer.speed) / MAX_SPEED, 1);
   const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.4);
-  skyGrad.addColorStop(0, `hsl(${220 - speedRatio * 20}, 60%, ${15 + speedRatio * 5}%)`);
-  skyGrad.addColorStop(1, `hsl(${200 - speedRatio * 30}, 40%, ${25 + speedRatio * 10}%)`);
+  skyGrad.addColorStop(0, `hsl(${210 - speedRatio * 10}, 70%, ${55 + speedRatio * 10}%)`);
+  skyGrad.addColorStop(1, `hsl(${200 - speedRatio * 10}, 60%, ${75 + speedRatio * 5}%)`);
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, W, H * 0.4);
 
-  // Stars in sky (subtle)
-  ctx.fillStyle = "rgba(255,255,255,0.3)";
-  for (let i = 0; i < 30; i++) {
-    const sx = ((i * 137 + frame * 0.02) % W);
-    const sy = ((i * 97) % (H * 0.35));
-    ctx.fillRect(sx, sy, 1, 1);
+  // Clouds in sky (subtle)
+  ctx.fillStyle = "rgba(255,255,255,0.4)";
+  for (let i = 0; i < 8; i++) {
+    const cx = ((i * 137 + frame * 0.05) % W);
+    const cy = 20 + ((i * 97) % (H * 0.25));
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 30 + (i % 3) * 15, 10 + (i % 2) * 5, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // Ground (grass)
   const groundGrad = ctx.createLinearGradient(0, H * 0.4, 0, H);
-  groundGrad.addColorStop(0, "#2d5a27");
-  groundGrad.addColorStop(1, "#1a3d15");
+  groundGrad.addColorStop(0, "#4a9e3f");
+  groundGrad.addColorStop(1, "#357a2b");
   ctx.fillStyle = groundGrad;
   ctx.fillRect(0, H * 0.4, W, H * 0.6);
 
@@ -789,7 +791,7 @@ function draw3DFrame(
     const dy = wy - camY;
 
     // Rotate by camera angle (look forward)
-    const rx = dx * camCos - dy * camSin;
+    const rx = -(dx * camCos - dy * camSin);
     const ry = dx * camSin + dy * camCos;
 
     // Perspective projection
