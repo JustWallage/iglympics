@@ -45,24 +45,23 @@ interface RankingEntry {
 const TRACK_WIDTH = 800;
 const TRACK_HEIGHT = 600;
 const TOTAL_LAPS = 3;
+const LOBBY_REFRESH_MS = 5000;
+const POSITION_UPDATE_MS = 50;
+const OFF_TRACK_FRICTION = 0.92;
+
+// Physics constants
+const ACCELERATION = 0.15;
+const FRICTION = 0.97;
+const TURN_SPEED = 0.05;
+const MAX_SPEED = 6;
+const BRAKE_FACTOR = 1.5;
+const MAX_REVERSE_FACTOR = 2;
 
 const CHECKPOINTS = [
   { x: 400, y: 100, radius: 60 },
   { x: 700, y: 300, radius: 60 },
   { x: 400, y: 500, radius: 60 },
   { x: 100, y: 300, radius: 60 },
-];
-
-// Track path: oval shape defined by control points
-const TRACK_PATH = [
-  { x: 400, y: 80 },
-  { x: 720, y: 80 },
-  { x: 750, y: 300 },
-  { x: 720, y: 520 },
-  { x: 400, y: 520 },
-  { x: 80, y: 520 },
-  { x: 50, y: 300 },
-  { x: 80, y: 80 },
 ];
 
 const KART_COLORS: Record<number, string> = {};
@@ -100,7 +99,7 @@ export default function Racing() {
 
   useEffect(() => {
     fetchGames();
-    const interval = setInterval(fetchGames, 5000);
+    const interval = setInterval(fetchGames, LOBBY_REFRESH_MS);
     return () => clearInterval(interval);
   }, [fetchGames]);
 
@@ -319,31 +318,26 @@ function RaceGame({ gameId, onBack }: { gameId: string; onBack: () => void }) {
 
       // Update local player physics when racing
       if (status === "racing" && user) {
-        const acceleration = 0.15;
-        const friction = 0.97;
-        const turnSpeed = 0.05;
-        const maxSpeed = 6;
-
         // Acceleration
         if (keys.has("ArrowUp") || keys.has("w") || keys.has("W") || touch.accelerating) {
-          local.speed = Math.min(maxSpeed, local.speed + acceleration);
+          local.speed = Math.min(MAX_SPEED, local.speed + ACCELERATION);
         }
         if (keys.has("ArrowDown") || keys.has("s") || keys.has("S") || touch.braking) {
-          local.speed = Math.max(-maxSpeed / 2, local.speed - acceleration * 1.5);
+          local.speed = Math.max(-MAX_SPEED / MAX_REVERSE_FACTOR, local.speed - ACCELERATION * BRAKE_FACTOR);
         }
 
         // Turning (only when moving)
         if (Math.abs(local.speed) > 0.1) {
           if (keys.has("ArrowLeft") || keys.has("a") || keys.has("A") || touch.left) {
-            local.angle -= turnSpeed * (local.speed > 0 ? 1 : -1);
+            local.angle -= TURN_SPEED * (local.speed > 0 ? 1 : -1);
           }
           if (keys.has("ArrowRight") || keys.has("d") || keys.has("D") || touch.right) {
-            local.angle += turnSpeed * (local.speed > 0 ? 1 : -1);
+            local.angle += TURN_SPEED * (local.speed > 0 ? 1 : -1);
           }
         }
 
         // Friction
-        local.speed *= friction;
+        local.speed *= FRICTION;
 
         // Move
         local.x += Math.cos(local.angle) * local.speed;
@@ -355,7 +349,7 @@ function RaceGame({ gameId, onBack }: { gameId: string; onBack: () => void }) {
 
         // Off-track slowdown
         if (!isOnTrack(local.x, local.y)) {
-          local.speed *= 0.92;
+          local.speed *= OFF_TRACK_FRICTION;
         }
 
         // Checkpoint detection
@@ -370,7 +364,7 @@ function RaceGame({ gameId, onBack }: { gameId: string; onBack: () => void }) {
 
         // Send position updates at ~20fps
         const now = Date.now();
-        if (now - lastSendTime > 50 && wsRef.current?.readyState === WebSocket.OPEN) {
+        if (now - lastSendTime > POSITION_UPDATE_MS && wsRef.current?.readyState === WebSocket.OPEN) {
           lastSendTime = now;
           wsRef.current.send(JSON.stringify({
             type: "player_update",
@@ -672,5 +666,3 @@ function drawKart(ctx: CanvasRenderingContext2D, x: number, y: number, angle: nu
   }
 }
 
-// Suppress unused variable warning
-void TRACK_PATH;

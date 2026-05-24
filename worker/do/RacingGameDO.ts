@@ -31,6 +31,10 @@ interface RaceState {
 const TRACK_WIDTH = 800;
 const TRACK_HEIGHT = 600;
 const TOTAL_LAPS = 3;
+const AI_BASE_SPEED = 3.5;
+const AI_SPEED_VARIATION = 0.4;
+const AI_TURN_FACTOR = 0.08;
+const SERVER_TICK_MS = 50;
 const CHECKPOINTS = [
   { x: 400, y: 100, radius: 60 },
   { x: 700, y: 300, radius: 60 },
@@ -262,7 +266,7 @@ export class RacingGameDO {
       }
       this.updateAI();
       this.broadcastPositions();
-    }, 50);
+    }, SERVER_TICK_MS);
   }
 
   private updateAI() {
@@ -281,10 +285,10 @@ export class RacingGameDO {
       let angleDiff = targetAngle - player.angle;
       while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
       while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-      player.angle += angleDiff * 0.08;
+      player.angle += angleDiff * AI_TURN_FACTOR;
 
       // Vary speed slightly per AI to make it interesting
-      const baseSpeed = 3.5 + (Math.abs(player.id) % 3) * 0.4;
+      const baseSpeed = AI_BASE_SPEED + (Math.abs(player.id) % 3) * AI_SPEED_VARIATION;
       player.speed = baseSpeed + Math.sin(Date.now() / 1000 + player.id) * 0.5;
 
       // Move
