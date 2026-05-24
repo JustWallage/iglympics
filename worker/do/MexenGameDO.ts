@@ -10,7 +10,7 @@
 // - Highest score wins the round.
 //
 // "Mexen" = rolling double 1s (score 0, worst possible).
-// Special combos: 3+1 = "Mex" (21 points, instant win).
+// Special combos: 2+1 = "Mex" (21 points, instant win).
 
 interface MexenPlayer {
   id: number;
@@ -270,12 +270,11 @@ export class MexenGameDO {
         this.gameState!.lastAction = `${player.name} rolled [${roll[0]}][${roll[1]}] — keeps the ${roll[keepIdx]}, doorjagen! 🎲`;
         player.currentRoll = [];
 
-        // If out of throws, auto-keep the doorjagen die next roll
-        if (player.throwsLeft <= 0) {
-          // Must use last roll value for the doorjagen die
+        // If out of throws, doorjagen doesn't count as a throw — roll once more
+                if (player.throwsLeft <= 0) {
           const doorjagenDie = rollDie();
           player.keptDice.push(doorjagenDie);
-          this.gameState!.lastAction += ` Final doorjagen roll: [${doorjagenDie}]`;
+          this.gameState!.lastAction += ` Doorjagen roll: [${doorjagenDie}]`;
           this.finishPlayerTurn(player);
           return;
         }
@@ -291,7 +290,7 @@ export class MexenGameDO {
         if (player.throwsLeft <= 0) {
           const doorjagenDie = rollDie();
           player.keptDice.push(doorjagenDie);
-          this.gameState!.lastAction += ` Final doorjagen roll: [${doorjagenDie}]`;
+          this.gameState!.lastAction += ` Doorjagen roll: [${doorjagenDie}]`;
           this.finishPlayerTurn(player);
           return;
         }
@@ -307,7 +306,7 @@ export class MexenGameDO {
         if (player.throwsLeft <= 0) {
           const doorjagenDie = rollDie();
           player.keptDice.push(doorjagenDie);
-          this.gameState!.lastAction += ` Final doorjagen roll: [${doorjagenDie}]`;
+          this.gameState!.lastAction += ` Doorjagen roll: [${doorjagenDie}]`;
           this.finishPlayerTurn(player);
           return;
         }
