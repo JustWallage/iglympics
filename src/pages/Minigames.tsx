@@ -56,22 +56,31 @@ const LINGO_MAX_ATTEMPTS = 5;
 
 // ─── Lingo Sound Effects (inspired by Dutch Lingo TV show) ──────────────────
 function createLingoSounds() {
-  const ctx = () => new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+  let audioCtx: AudioContext | null = null;
+
+  const getCtx = () => {
+    if (!audioCtx || audioCtx.state === "closed") {
+      audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    }
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  };
 
   const playTone = (frequency: number, duration: number, type: OscillatorType = "sine", volume = 0.3) => {
     try {
-      const audioCtx = ctx();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const ctx = getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = type;
       osc.frequency.value = frequency;
       gain.gain.value = volume;
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(ctx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-      setTimeout(() => audioCtx.close(), duration * 1000 + 100);
+      osc.stop(ctx.currentTime + duration);
     } catch { /* audio not supported */ }
   };
 
