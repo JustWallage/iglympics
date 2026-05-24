@@ -52,8 +52,69 @@ const GAMES: GameDef[] = [
 // ─── Lingo Game ──────────────────────────────────────────────────────────────
 
 const LINGO_WORD_LENGTH = 5;
-const LINGO_INPUT_LENGTH = LINGO_WORD_LENGTH - 1;
 const LINGO_MAX_ATTEMPTS = 5;
+
+// ─── Lingo Sound Effects (inspired by Dutch Lingo TV show) ──────────────────
+function createLingoSounds() {
+  let audioCtx: AudioContext | null = null;
+
+  const getCtx = () => {
+    if (!audioCtx || audioCtx.state === "closed") {
+      audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    }
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  };
+
+  const playTone = (frequency: number, duration: number, type: OscillatorType = "sine", volume = 0.3) => {
+    try {
+      const ctx = getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = frequency;
+      gain.gain.value = volume;
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch { /* audio not supported */ }
+  };
+
+  return {
+    // Ball drop / letter reveal tick
+    letterReveal: () => playTone(800, 0.08, "sine", 0.2),
+    // Correct letter in correct position
+    correctPosition: () => playTone(1200, 0.12, "sine", 0.25),
+    // Letter present but wrong position
+    wrongPosition: () => playTone(400, 0.15, "triangle", 0.2),
+    // Correct word - ascending jingle like Lingo win
+    correctWord: () => {
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        setTimeout(() => playTone(freq, 0.2, "sine", 0.3), i * 120);
+      });
+    },
+    // Wrong guess - descending buzz
+    wrongGuess: () => playTone(200, 0.3, "sawtooth", 0.15),
+    // Game over - low descending tones
+    gameOver: () => {
+      [400, 300, 200].forEach((freq, i) => {
+        setTimeout(() => playTone(freq, 0.3, "sawtooth", 0.15), i * 200);
+      });
+    },
+    // New round start
+    newRound: () => {
+      [440, 550, 660].forEach((freq, i) => {
+        setTimeout(() => playTone(freq, 0.15, "sine", 0.2), i * 100);
+      });
+    },
+  };
+}
+
+const lingoSounds = createLingoSounds();
 const LINGO_WORDS = [
   "APPEL",
   "BROOD",
@@ -141,6 +202,7 @@ function useLingo(onGameOver: (score: number) => void) {
     setCurrentGuess("");
     setRound((r) => r + 1);
     setMessage("Correct! Next word.");
+    lingoSounds.newRound();
   }, []);
 
   const reset = useCallback(() => {
@@ -154,29 +216,39 @@ function useLingo(onGameOver: (score: number) => void) {
     setGameOver(false);
     setMessage("Guess the 5-letter word.");
     scoreRef.current = 0;
+    lingoSounds.newRound();
   }, [clearPendingTimeout]);
 
   const updateGuess = useCallback((value: string) => {
     const sanitized = value
       .toUpperCase()
       .replace(/[^A-Z]/g, "")
-      .slice(0, LINGO_INPUT_LENGTH);
+      .slice(0, LINGO_WORD_LENGTH);
     setCurrentGuess(sanitized);
   }, []);
 
   const submitGuess = useCallback(() => {
     if (!running || gameOver) return;
 
-    if (currentGuess.length !== LINGO_INPUT_LENGTH) {
-      setMessage("Type the last 4 letters.");
+    if (currentGuess.length !== LINGO_WORD_LENGTH) {
+      setMessage("Type all 5 letters.");
       return;
     }
 
-    const fullGuess = `${answer[0]}${currentGuess}`;
+    const fullGuess = currentGuess;
     const result = scoreLingoGuess(fullGuess, answer);
     const nextGuesses = [...guesses, { word: fullGuess, result }];
     setGuesses(nextGuesses);
     setCurrentGuess("");
+
+    // Play letter reveal sounds
+    result.forEach((r, i) => {
+      setTimeout(() => {
+        if (r === "correct") lingoSounds.correctPosition();
+        else if (r === "present") lingoSounds.wrongPosition();
+        else lingoSounds.letterReveal();
+      }, i * 150);
+    });
 
     if (fullGuess === answer) {
       const points = LINGO_MAX_ATTEMPTS - guesses.length;
@@ -184,9 +256,10 @@ function useLingo(onGameOver: (score: number) => void) {
       setScore(nextScore);
       scoreRef.current = nextScore;
       clearPendingTimeout();
+      setTimeout(() => lingoSounds.correctWord(), LINGO_WORD_LENGTH * 150);
       timeoutRef.current = window.setTimeout(() => {
         startRound(answer);
-      }, 900);
+      }, 1500);
       return;
     }
 
@@ -194,10 +267,12 @@ function useLingo(onGameOver: (score: number) => void) {
       setRunning(false);
       setGameOver(true);
       setMessage(`Game Over! The word was ${answer}.`);
+      setTimeout(() => lingoSounds.gameOver(), LINGO_WORD_LENGTH * 150);
       onGameOver(scoreRef.current);
       return;
     }
 
+    setTimeout(() => lingoSounds.wrongGuess(), LINGO_WORD_LENGTH * 150);
     setMessage(`${LINGO_MAX_ATTEMPTS - nextGuesses.length} attempts left.`);
   }, [
     answer,
@@ -232,7 +307,7 @@ function LingoBoard({
 }: {
   lingoGame: ReturnType<typeof useLingo>;
 }) {
-  const { answer, guesses, currentGuess, round, gameOver, message } = lingoGame;
+  const { guesses, currentGuess, round, gameOver, message } = lingoGame;
   const attemptsLeft = LINGO_MAX_ATTEMPTS - guesses.length;
 
   const rows: { letter: string; state: LingoLetterResult | null }[][] = Array.from(
@@ -247,16 +322,16 @@ function LingoBoard({
     }
 
     if (!gameOver && index === guesses.length) {
-      const draftLetters = [answer[0], ...currentGuess.split("")];
+      const draftLetters = currentGuess.split("");
       return Array.from({ length: LINGO_WORD_LENGTH }, (_, letterIndex) => ({
         letter: draftLetters[letterIndex] ?? "",
-        state: letterIndex === 0 ? "correct" : null,
+        state: null,
       }));
     }
 
-    return Array.from({ length: LINGO_WORD_LENGTH }, (_, letterIndex) => ({
-      letter: letterIndex === 0 ? answer[0] : "",
-      state: letterIndex === 0 ? "correct" : null,
+    return Array.from({ length: LINGO_WORD_LENGTH }, () => ({
+      letter: "",
+      state: null,
     }));
     },
   );
@@ -301,11 +376,11 @@ function LingoBoard({
           <Input
             value={currentGuess}
             onChange={(e) => lingoGame.updateGuess(e.target.value)}
-            placeholder="Type the last 4 letters"
+            placeholder="Type the 5-letter word"
             inputMode="text"
             autoCapitalize="characters"
             autoCorrect="off"
-            maxLength={LINGO_INPUT_LENGTH}
+            maxLength={LINGO_WORD_LENGTH}
             aria-label="Lingo guess"
           />
           <Button type="submit" className="w-full">
