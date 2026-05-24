@@ -47,6 +47,9 @@ const CANVAS_H = 600;
 const TOTAL_LAPS = 3;
 const LOBBY_REFRESH_MS = 5000;
 const POSITION_UPDATE_MS = 50;
+const RENDER_DISTANCE = 400; // Max distance to render objects from camera
+const MIN_CAMERA_DEPTH = 20; // Objects behind this depth are behind the camera
+const SPEED_TO_KMH = 15; // Conversion factor: internal speed units to km/h
 
 // Physics constants - tuned for exciting feel
 const ACCELERATION = 0.18;
@@ -367,7 +370,7 @@ function RaceGame({ gameId, onBack }: { gameId: string; onBack: () => void }) {
   const saveTopSpeed = useCallback(async (speed: number) => {
     try {
       // Convert internal speed units to km/h for display (multiply by 15)
-      const kmh = Math.round(speed * 15);
+      const kmh = Math.round(speed * SPEED_TO_KMH);
       await fetch("/api/minigame-scores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -545,11 +548,12 @@ function RaceGame({ gameId, onBack }: { gameId: string; onBack: () => void }) {
           emitParticles(local.x, local.y, 15, "#ffaa00", 5);
         }
 
-        // Track top speed this lap
+        // Track top speed this lap (throttle React updates to every 0.5 unit change)
         const currentSpeed = Math.abs(local.speed);
         if (currentSpeed > local.topSpeedThisLap) {
+          const shouldUpdate = currentSpeed - local.topSpeedThisLap > 0.5;
           local.topSpeedThisLap = currentSpeed;
-          setTopSpeedThisLap(currentSpeed);
+          if (shouldUpdate) setTopSpeedThisLap(currentSpeed);
         }
 
         // Tire smoke when drifting
@@ -624,7 +628,7 @@ function RaceGame({ gameId, onBack }: { gameId: string; onBack: () => void }) {
             <Badge>Lap {Math.min(currentLap + 1, TOTAL_LAPS)}/{TOTAL_LAPS}</Badge>
             <Badge className="bg-yellow-500/20 text-yellow-300">
               <Zap size={12} className="mr-1" />
-              {Math.round(topSpeedThisLap * 15)} km/h
+              {Math.round(topSpeedThisLap * SPEED_TO_KMH)} km/h
             </Badge>
           </div>
         )}
@@ -673,7 +677,7 @@ function RaceGame({ gameId, onBack }: { gameId: string; onBack: () => void }) {
               {bestLapSpeed > 0 && (
                 <div className="mt-3 p-2 rounded bg-yellow-500/10 text-center">
                   <p className="text-xs text-yellow-400">
-                    🏆 Best Lap Top Speed: <strong>{Math.round(bestLapSpeed * 15)} km/h</strong>
+                    🏆 Best Lap Top Speed: <strong>{Math.round(bestLapSpeed * SPEED_TO_KMH)} km/h</strong>
                   </p>
                 </div>
               )}
@@ -775,20 +779,22 @@ function draw3DFrame(
   const camAngle = localPlayer.angle;
 
   // Transform helper: world -> screen with perspective
+  // Cache trig values for the frame (camAngle is constant during rendering)
+  const camCos = Math.cos(-camAngle + Math.PI / 2);
+  const camSin = Math.sin(-camAngle + Math.PI / 2);
+
   const worldToScreen = (wx: number, wy: number): { sx: number; sy: number; scale: number } | null => {
     // Translate relative to camera
     const dx = wx - camX;
     const dy = wy - camY;
 
     // Rotate by camera angle (look forward)
-    const cos = Math.cos(-camAngle + Math.PI / 2);
-    const sin = Math.sin(-camAngle + Math.PI / 2);
-    const rx = dx * cos - dy * sin;
-    const ry = dx * sin + dy * cos;
+    const rx = dx * camCos - dy * camSin;
+    const ry = dx * camSin + dy * camCos;
 
     // Perspective projection
     const depth = ry; // distance in front of camera
-    if (depth < 20) return null; // behind camera
+    if (depth < MIN_CAMERA_DEPTH) return null; // behind camera
 
     const perspective = 300 / depth;
     const sx = W / 2 + rx * perspective;
@@ -810,7 +816,7 @@ function draw3DFrame(
     const midY = (a.y + b.y) / 2;
     const dist = Math.sqrt((midX - camX) ** 2 + (midY - camY) ** 2);
 
-    if (dist > 400) continue; // cull distant segments
+    if (dist > RENDER_DISTANCE) continue; // cull distant segments
 
     const sa = worldToScreen(a.x, a.y);
     const sb = worldToScreen(b.x, b.y);
@@ -863,7 +869,7 @@ function draw3DFrame(
   // Draw boost pads
   for (const pad of BOOST_PADS) {
     const dist = Math.sqrt((pad.x - camX) ** 2 + (pad.y - camY) ** 2);
-    if (dist > 350) continue;
+    if (dist > RENDER_DISTANCE * 0.875) continue;
     const sp = worldToScreen(pad.x, pad.y);
     if (!sp) continue;
 
@@ -891,7 +897,7 @@ function draw3DFrame(
   // Draw trees
   for (const tree of TREES) {
     const dist = Math.sqrt((tree.x - camX) ** 2 + (tree.y - camY) ** 2);
-    if (dist > 350) continue;
+    if (dist > RENDER_DISTANCE * 0.875) continue;
     const sp = worldToScreen(tree.x, tree.y);
     if (!sp) continue;
 
@@ -919,7 +925,7 @@ function draw3DFrame(
   // Draw buildings
   for (const bldg of BUILDINGS) {
     const dist = Math.sqrt((bldg.x - camX) ** 2 + (bldg.y - camY) ** 2);
-    if (dist > 350) continue;
+    if (dist > RENDER_DISTANCE * 0.875) continue;
     const sp = worldToScreen(bldg.x, bldg.y);
     if (!sp) continue;
 
@@ -951,7 +957,7 @@ function draw3DFrame(
   for (const pos of positions) {
     if (pos.id === myId) { playerIndex++; continue; }
     const dist = Math.sqrt((pos.x - camX) ** 2 + (pos.y - camY) ** 2);
-    if (dist > 350) { playerIndex++; continue; }
+    if (dist > RENDER_DISTANCE * 0.875) { playerIndex++; continue; }
     const sp = worldToScreen(pos.x, pos.y);
     if (!sp) { playerIndex++; continue; }
 
@@ -990,8 +996,8 @@ function draw3DFrame(
   // Speedometer (bottom right)
   if (status === "racing") {
     const speed = Math.abs(localPlayer.speed);
-    const kmh = Math.round(speed * 15);
-    const maxKmh = Math.round(BOOST_SPEED * 15);
+    const kmh = Math.round(speed * SPEED_TO_KMH);
+    const maxKmh = Math.round(BOOST_SPEED * SPEED_TO_KMH);
 
     // Speedometer background
     ctx.fillStyle = "rgba(0,0,0,0.7)";
@@ -1083,7 +1089,7 @@ function draw3DFrame(
     ctx.fillText("⚡ TOP SPEED THIS LAP", 18, 28);
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 18px monospace";
-    ctx.fillText(`${Math.round(localPlayer.topSpeedThisLap * 15)} km/h`, 18, 50);
+    ctx.fillText(`${Math.round(localPlayer.topSpeedThisLap * SPEED_TO_KMH)} km/h`, 18, 50);
 
     // Boost indicator
     if (localPlayer.boostTimer > 0) {
