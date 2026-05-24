@@ -2050,10 +2050,10 @@ function generateMaze(size: number): { grid: number[][]; startX: number; startY:
 
   // Determine initial angle: face toward the first open adjacent corridor
   let startAngle = 0;
-  if (grid[startY][startX + 1] === 0) startAngle = 0;           // right
+  if (grid[startY][startX + 1] === 0) startAngle = 0;                // right
   else if (grid[startY + 1][startX] === 0) startAngle = Math.PI / 2; // down
   else if (grid[startY][startX - 1] === 0) startAngle = Math.PI;     // left
-  else if (grid[startY - 1]?.[startX] === 0) startAngle = -Math.PI / 2; // up
+  else if (grid[startY - 1][startX] === 0) startAngle = -Math.PI / 2; // up
 
   return { grid, startX, startY, endX, endY, startAngle };
 }
