@@ -1822,7 +1822,7 @@ function useParking(onGameOver: (score: number) => void) {
 
         let angle = prev.angle;
         if (Math.abs(speed) > 0.05) {
-          angle += steering * TURN_SPEED * speed;
+          angle += steering * TURN_SPEED * Math.sign(speed);
         }
 
         const vx = Math.sin(angle) * speed;
@@ -2493,14 +2493,7 @@ export default function Minigames() {
                             >
                               <ArrowLeft size={28} />
                             </button>
-                            <button
-                              onPointerDown={() => parkingGame.setThrottle(-1)}
-                              onPointerUp={() => parkingGame.setThrottle(0)}
-                              onPointerLeave={() => parkingGame.setThrottle(0)}
-                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-xs text-white/60 touch-none"
-                            >
-                              R
-                            </button>
+                            <div className="h-14 rounded-2xl bg-white/[0.05]" role="presentation" aria-hidden="true" />
                             <button
                               onPointerDown={() => parkingGame.setSteer(1)}
                               onPointerUp={() => parkingGame.setSteer(0)}
