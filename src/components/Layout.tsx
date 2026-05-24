@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useMusicPlayer } from "../context/MusicContext";
-import { Trophy, User, Zap, LogIn, Swords, MessageCircle, Home, CalendarDays, Gamepad2, Camera, Play, Pause, SkipForward, TrendingUp } from "lucide-react";
+import { Trophy, User, Zap, LogIn, Swords, MessageCircle, Home, CalendarDays, Gamepad2, Camera, Play, Pause, SkipForward, TrendingUp, Hand } from "lucide-react";
 
 export default function Layout() {
   const { user, isAdmin, openLoginModal } = useAuth();
@@ -63,7 +63,7 @@ export default function Layout() {
             <Link
               to="/"
               className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
-                isActive("/") && !isActive("/profile") && !isActive("/admin") && !isActive("/matches") && !isActive("/chat") && !isActive("/scoreboard") && !isActive("/schedule") && !isActive("/games") && !isActive("/snaps")
+                isActive("/") && !isActive("/profile") && !isActive("/admin") && !isActive("/matches") && !isActive("/chat") && !isActive("/scoreboard") && !isActive("/schedule") && !isActive("/games") && !isActive("/snaps") && !isActive("/bets") && !isActive("/chwazi")
                   ? "text-accent-light"
                   : "text-white/35 active:text-white/60"
               }`}
@@ -154,6 +154,18 @@ export default function Layout() {
             >
               <TrendingUp size={22} />
               <span className="text-[10px] font-medium truncate max-w-full px-1">Bets</span>
+            </Link>
+
+            <Link
+              to="/chwazi"
+              className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 rounded-xl transition-colors ${
+                isActive("/chwazi")
+                  ? "text-accent-light"
+                  : "text-white/35 active:text-white/60"
+              }`}
+            >
+              <Hand size={22} />
+              <span className="text-[10px] font-medium truncate max-w-full px-1">Chwazi</span>
             </Link>
 
             {user && (
