@@ -48,6 +48,7 @@ const GAMES: GameDef[] = [
   { id: "trivia", name: "Trivia", emoji: "🧠" },
   { id: "chess", name: "Chess", emoji: "♟️" },
   { id: "parking", name: "Inparkeren", emoji: "🚗" },
+  { id: "maze", name: "3D Maze", emoji: "🏁" },
 ];
 
 // ─── Lingo Game ──────────────────────────────────────────────────────────────
@@ -1990,6 +1991,347 @@ function ParkingBoard({ game }: { game: ReturnType<typeof useParking> }) {
   );
 }
 
+// ─── 3D Maze Game (Raycasting) ──────────────────────────────────────────────
+
+const MAZE_W = 320;
+const MAZE_H = 240;
+const MAZE_SIZE = 15; // grid cells
+const MAZE_FOV = Math.PI / 3;
+const MAZE_NUM_RAYS = MAZE_W;
+const MAZE_MOVE_SPEED = 0.06;
+const MAZE_ROT_SPEED = 0.05;
+
+function generateMaze(size: number): { grid: number[][]; startX: number; startY: number; endX: number; endY: number } {
+  // Create grid filled with walls (1)
+  const grid: number[][] = Array.from({ length: size }, () => Array(size).fill(1));
+
+  // Recursive backtracker maze generation
+  const visited: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false));
+
+  const carve = (cx: number, cy: number) => {
+    visited[cy][cx] = true;
+    grid[cy][cx] = 0;
+
+    const dirs = [
+      [0, -2], [0, 2], [-2, 0], [2, 0],
+    ].sort(() => Math.random() - 0.5);
+
+    for (const [dx, dy] of dirs) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      if (nx >= 0 && nx < size && ny >= 0 && ny < size && !visited[ny][nx]) {
+        // Carve the wall between
+        grid[cy + dy / 2][cx + dx / 2] = 0;
+        carve(nx, ny);
+      }
+    }
+  };
+
+  // Start at (1,1)
+  carve(1, 1);
+
+  const startX = 1;
+  const startY = 1;
+  // End at bottom-right open cell
+  let endX = size - 2;
+  let endY = size - 2;
+  // Ensure end is open
+  grid[endY][endX] = 0;
+  // Also ensure the cell before it is open for accessibility
+  if (endX - 1 >= 0) grid[endY][endX - 1] = 0;
+
+  return { grid, startX, startY, endX, endY };
+}
+
+function useMaze(onGameOver: (score: number) => void) {
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [mazeData, setMazeData] = useState(() => generateMaze(MAZE_SIZE));
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [won, setWon] = useState(false);
+
+  const playerRef = useRef({ x: 1.5, y: 1.5, angle: 0 });
+  const keysRef = useRef<Set<string>>(new Set());
+  const gameOverRef = useRef(false);
+  const startTimeRef = useRef(0);
+
+  const reset = useCallback(() => {
+    const maze = generateMaze(MAZE_SIZE);
+    setMazeData(maze);
+    setScore(0);
+    setGameOver(false);
+    setWon(false);
+    setTimeElapsed(0);
+    gameOverRef.current = false;
+    playerRef.current = { x: maze.startX + 0.5, y: maze.startY + 0.5, angle: 0 };
+    startTimeRef.current = performance.now();
+  }, []);
+
+  // Keyboard controls
+  useEffect(() => {
+    const onDown = (e: KeyboardEvent) => { keysRef.current.add(e.key); };
+    const onUp = (e: KeyboardEvent) => { keysRef.current.delete(e.key); };
+    window.addEventListener("keydown", onDown);
+    window.addEventListener("keyup", onUp);
+    return () => {
+      window.removeEventListener("keydown", onDown);
+      window.removeEventListener("keyup", onUp);
+    };
+  }, []);
+
+  // Game loop
+  useEffect(() => {
+    if (gameOver) return;
+    startTimeRef.current = performance.now();
+
+    let animId: number;
+    const tick = () => {
+      if (gameOverRef.current) return;
+
+      const keys = keysRef.current;
+      const p = playerRef.current;
+
+      // Rotation
+      if (keys.has("ArrowLeft") || keys.has("a")) p.angle -= MAZE_ROT_SPEED;
+      if (keys.has("ArrowRight") || keys.has("d")) p.angle += MAZE_ROT_SPEED;
+
+      // Movement
+      let dx = 0, dy = 0;
+      if (keys.has("ArrowUp") || keys.has("w")) {
+        dx += Math.cos(p.angle) * MAZE_MOVE_SPEED;
+        dy += Math.sin(p.angle) * MAZE_MOVE_SPEED;
+      }
+      if (keys.has("ArrowDown") || keys.has("s")) {
+        dx -= Math.cos(p.angle) * MAZE_MOVE_SPEED;
+        dy -= Math.sin(p.angle) * MAZE_MOVE_SPEED;
+      }
+
+      // Collision detection
+      const margin = 0.2;
+      const newX = p.x + dx;
+      const newY = p.y + dy;
+      if (mazeData.grid[Math.floor(p.y)][Math.floor(newX + margin * Math.sign(dx))] === 0) {
+        p.x = newX;
+      }
+      if (mazeData.grid[Math.floor(newY + margin * Math.sign(dy))][Math.floor(p.x)] === 0) {
+        p.y = newY;
+      }
+
+      // Check if reached end
+      const distToEnd = Math.hypot(p.x - (mazeData.endX + 0.5), p.y - (mazeData.endY + 0.5));
+      if (distToEnd < 0.5) {
+        gameOverRef.current = true;
+        const elapsed = (performance.now() - startTimeRef.current) / 1000;
+        setTimeElapsed(elapsed);
+        // Score: higher is better, based on speed. Max 10000, minus time penalty
+        const finalScore = Math.max(100, Math.round(10000 - elapsed * 100));
+        setScore(finalScore);
+        setWon(true);
+        setGameOver(true);
+        onGameOver(finalScore);
+        return;
+      }
+
+      setTimeElapsed((performance.now() - startTimeRef.current) / 1000);
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, [gameOver, mazeData, onGameOver]);
+
+  // Mobile controls
+  const moveForward = useCallback(() => { keysRef.current.add("ArrowUp"); }, []);
+  const moveBackward = useCallback(() => { keysRef.current.add("ArrowDown"); }, []);
+  const turnLeft = useCallback(() => { keysRef.current.add("ArrowLeft"); }, []);
+  const turnRight = useCallback(() => { keysRef.current.add("ArrowRight"); }, []);
+  const stopForward = useCallback(() => { keysRef.current.delete("ArrowUp"); }, []);
+  const stopBackward = useCallback(() => { keysRef.current.delete("ArrowDown"); }, []);
+  const stopLeft = useCallback(() => { keysRef.current.delete("ArrowLeft"); }, []);
+  const stopRight = useCallback(() => { keysRef.current.delete("ArrowRight"); }, []);
+
+  return {
+    score, gameOver, won, timeElapsed, mazeData, playerRef, reset,
+    moveForward, moveBackward, turnLeft, turnRight,
+    stopForward, stopBackward, stopLeft, stopRight,
+  };
+}
+
+function MazeBoard({ game }: { game: ReturnType<typeof useMaze> }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    const draw = () => {
+      const { grid } = game.mazeData;
+      const player = game.playerRef.current;
+      const w = MAZE_W;
+      const h = MAZE_H;
+
+      // Clear - sky and floor
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fillRect(0, 0, w, h / 2);
+      ctx.fillStyle = "#2d2d44";
+      ctx.fillRect(0, h / 2, w, h / 2);
+
+      // Raycasting
+      const startAngle = player.angle - MAZE_FOV / 2;
+      const angleStep = MAZE_FOV / MAZE_NUM_RAYS;
+
+      for (let i = 0; i < MAZE_NUM_RAYS; i++) {
+        const rayAngle = startAngle + i * angleStep;
+        const cos = Math.cos(rayAngle);
+        const sin = Math.sin(rayAngle);
+
+        // DDA raycasting
+        let dist = 0;
+        const step = 0.02;
+        let hitX = player.x;
+        let hitY = player.y;
+        let hit = false;
+
+        while (dist < 20) {
+          hitX = player.x + cos * dist;
+          hitY = player.y + sin * dist;
+          const mapX = Math.floor(hitX);
+          const mapY = Math.floor(hitY);
+
+          if (mapX < 0 || mapX >= MAZE_SIZE || mapY < 0 || mapY >= MAZE_SIZE) {
+            hit = true;
+            break;
+          }
+          if (grid[mapY][mapX] === 1) {
+            hit = true;
+            break;
+          }
+          dist += step;
+        }
+
+        if (!hit) continue;
+
+        // Fix fisheye
+        const correctedDist = dist * Math.cos(rayAngle - player.angle);
+        const wallHeight = Math.min(h, h / correctedDist);
+
+        // Color based on distance
+        const brightness = Math.max(0, 1 - correctedDist / 8);
+        // Determine wall side for texture-like effect
+        const fractX = hitX - Math.floor(hitX);
+        const fractY = hitY - Math.floor(hitY);
+        const isVertical = fractX < 0.02 || fractX > 0.98;
+
+        let r: number, g: number, b: number;
+        if (isVertical) {
+          r = Math.floor(80 * brightness);
+          g = Math.floor(120 * brightness);
+          b = Math.floor(200 * brightness);
+        } else {
+          r = Math.floor(60 * brightness);
+          g = Math.floor(90 * brightness);
+          b = Math.floor(160 * brightness);
+        }
+
+        // Check if this is the end cell
+        const mapX = Math.floor(hitX);
+        const mapY = Math.floor(hitY);
+        const isEnd = (mapX === game.mazeData.endX || mapX === game.mazeData.endX + 1) &&
+                      (mapY === game.mazeData.endY || mapY === game.mazeData.endY + 1);
+        if (isEnd) {
+          r = Math.floor(80 * brightness);
+          g = Math.floor(200 * brightness);
+          b = Math.floor(80 * brightness);
+        }
+
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(i, (h - wallHeight) / 2, 1, wallHeight);
+      }
+
+      // Draw end marker (green glow at the end position)
+      const endDx = (game.mazeData.endX + 0.5) - player.x;
+      const endDy = (game.mazeData.endY + 0.5) - player.y;
+      const endAngle = Math.atan2(endDy, endDx);
+      const endDist = Math.hypot(endDx, endDy);
+      const relAngle = endAngle - player.angle;
+      // Normalize to [-PI, PI]
+      const normAngle = ((relAngle + Math.PI) % (2 * Math.PI)) - Math.PI;
+
+      if (Math.abs(normAngle) < MAZE_FOV / 2 && endDist < 10) {
+        const screenX = (normAngle / MAZE_FOV + 0.5) * w;
+        const correctedEndDist = endDist * Math.cos(normAngle);
+        const markerSize = Math.min(80, h / correctedEndDist * 0.4);
+        const alpha = Math.max(0.2, 1 - correctedEndDist / 8);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#22c55e";
+        ctx.shadowColor = "#22c55e";
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(screenX, h / 2, markerSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        // Flag icon
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `${Math.max(12, markerSize * 0.6)}px system-ui`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🏁", screenX, h / 2);
+        ctx.restore();
+      }
+
+      // HUD
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.font = "bold 14px system-ui";
+      ctx.textAlign = "left";
+      ctx.fillText(`⏱️ ${game.timeElapsed.toFixed(1)}s`, 8, 20);
+
+      // Minimap
+      const mmSize = 60;
+      const mmCellSize = mmSize / MAZE_SIZE;
+      const mmX = w - mmSize - 8;
+      const mmY = 8;
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(mmX, mmY, mmSize, mmSize);
+      for (let my = 0; my < MAZE_SIZE; my++) {
+        for (let mx = 0; mx < MAZE_SIZE; mx++) {
+          if (grid[my][mx] === 1) {
+            ctx.fillStyle = "rgba(100,130,200,0.5)";
+            ctx.fillRect(mmX + mx * mmCellSize, mmY + my * mmCellSize, mmCellSize, mmCellSize);
+          }
+        }
+      }
+      // Player on minimap
+      ctx.fillStyle = "#fbbf24";
+      ctx.beginPath();
+      ctx.arc(mmX + player.x * mmCellSize, mmY + player.y * mmCellSize, 2, 0, Math.PI * 2);
+      ctx.fill();
+      // End on minimap
+      ctx.fillStyle = "#22c55e";
+      ctx.beginPath();
+      ctx.arc(mmX + (game.mazeData.endX + 0.5) * mmCellSize, mmY + (game.mazeData.endY + 0.5) * mmCellSize, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [game.mazeData, game.playerRef, game.timeElapsed, game.gameOver]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={MAZE_W}
+      height={MAZE_H}
+      className="w-full rounded-lg border border-white/[0.1]"
+      style={{ imageRendering: "crisp-edges" }}
+    />
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function Minigames() {
@@ -2030,6 +2372,7 @@ export default function Minigames() {
   const triviaGame = useTriviaGame(handleGameOver);
   const chessGame = useChess(handleGameOver);
   const parkingGame = useParking(handleGameOver);
+  const mazeGame = useMaze(handleGameOver);
   const [gameOverReady, setGameOverReady] = useState(false);
 
   const startGame = () => {
@@ -2041,6 +2384,7 @@ export default function Minigames() {
     else if (selectedGame?.id === "trivia") triviaGame.reset();
     else if (selectedGame?.id === "chess") chessGame.reset();
     else if (selectedGame?.id === "parking") parkingGame.reset();
+    else if (selectedGame?.id === "maze") mazeGame.reset();
   };
 
   // Delay-enable buttons after game over to prevent accidental taps
@@ -2050,7 +2394,8 @@ export default function Minigames() {
     (selectedGame?.id === "lingo" && lingoGame.gameOver) ||
     (selectedGame?.id === "trivia" && triviaGame.gameOver) ||
     (selectedGame?.id === "chess" && chessGame.gameOver) ||
-    (selectedGame?.id === "parking" && parkingGame.gameOver);
+    (selectedGame?.id === "parking" && parkingGame.gameOver) ||
+    (selectedGame?.id === "maze" && mazeGame.gameOver);
   useEffect(() => {
     if (!isGameOverNow) {
       setGameOverReady(false);
@@ -2290,7 +2635,9 @@ export default function Minigames() {
                         ? triviaGame.gameOver
                         : selectedGame.id === "parking"
                           ? parkingGame.gameOver
-                          : chessGame.gameOver)
+                          : selectedGame.id === "maze"
+                            ? mazeGame.gameOver
+                            : chessGame.gameOver)
                     ? "Play Again"
                     : "Start Game"}
                 </Button>
@@ -2315,7 +2662,9 @@ export default function Minigames() {
                           ? triviaGame.score
                           : selectedGame.id === "parking"
                             ? parkingGame.score
-                            : chessGame.score;
+                            : selectedGame.id === "maze"
+                              ? mazeGame.score
+                              : chessGame.score;
                   const isGameOver =
                     selectedGame.id === "snake"
                       ? snakeGame.gameOver
@@ -2327,7 +2676,9 @@ export default function Minigames() {
                           ? triviaGame.gameOver
                           : selectedGame.id === "parking"
                             ? parkingGame.gameOver
-                            : chessGame.gameOver;
+                            : selectedGame.id === "maze"
+                              ? mazeGame.gameOver
+                              : chessGame.gameOver;
 
                   return (
                     <>
@@ -2387,6 +2738,9 @@ export default function Minigames() {
                       {selectedGame.id === "parking" && (
                         <ParkingBoard game={parkingGame} />
                       )}
+                      {selectedGame.id === "maze" && (
+                        <MazeBoard game={mazeGame} />
+                      )}
 
                       {isGameOver && (
                         <div className="mt-3 text-center">
@@ -2395,6 +2749,8 @@ export default function Minigames() {
                               <>{chessGame.gameOverReason} Score:{" "}</>
                             ) : selectedGame.id === "parking" && parkingGame.gameOverReason ? (
                               <>{parkingGame.gameOverReason} Score:{" "}</>
+                            ) : selectedGame.id === "maze" && mazeGame.won ? (
+                              <>Maze completed in {mazeGame.timeElapsed.toFixed(1)}s! Score:{" "}</>
                             ) : (
                               <>Game Over! Score:{" "}</>
                             )}
@@ -2507,6 +2863,51 @@ export default function Minigames() {
                               onPointerDown={() => parkingGame.setThrottle(-1)}
                               onPointerUp={() => parkingGame.setThrottle(0)}
                               onPointerLeave={() => parkingGame.setThrottle(0)}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowDown size={28} />
+                            </button>
+                            <div />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Maze controls */}
+                      {selectedGame.id === "maze" && !mazeGame.gameOver && (
+                        <div className="mt-4 flex justify-center">
+                          <div className="grid grid-cols-3 gap-2 w-52 select-none">
+                            <div />
+                            <button
+                              onPointerDown={mazeGame.moveForward}
+                              onPointerUp={mazeGame.stopForward}
+                              onPointerLeave={mazeGame.stopForward}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowUp size={28} />
+                            </button>
+                            <div />
+                            <button
+                              onPointerDown={mazeGame.turnLeft}
+                              onPointerUp={mazeGame.stopLeft}
+                              onPointerLeave={mazeGame.stopLeft}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowLeft size={28} />
+                            </button>
+                            <div className="h-14 rounded-2xl bg-white/[0.05]" role="presentation" aria-hidden="true" />
+                            <button
+                              onPointerDown={mazeGame.turnRight}
+                              onPointerUp={mazeGame.stopRight}
+                              onPointerLeave={mazeGame.stopRight}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowRight size={28} />
+                            </button>
+                            <div />
+                            <button
+                              onPointerDown={mazeGame.moveBackward}
+                              onPointerUp={mazeGame.stopBackward}
+                              onPointerLeave={mazeGame.stopBackward}
                               className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
                             >
                               <ArrowDown size={28} />
