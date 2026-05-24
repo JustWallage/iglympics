@@ -47,6 +47,7 @@ const GAMES: GameDef[] = [
   { id: "lingo", name: "Lingo", emoji: "🔤" },
   { id: "trivia", name: "Trivia", emoji: "🧠" },
   { id: "chess", name: "Chess", emoji: "♟️" },
+  { id: "parking", name: "Inparkeren", emoji: "🚗" },
 ];
 
 // ─── Lingo Game ──────────────────────────────────────────────────────────────
@@ -1593,6 +1594,402 @@ function ChessBoard({
   );
 }
 
+// ─── Inparkeren (Parallel Parking) Game ─────────────────────────────────────
+
+const PARKING_W = 300;
+const PARKING_H = 400;
+const CAR_W = 30;
+const CAR_H = 56;
+const PARKED_CAR_W = 32;
+const PARKED_CAR_H = 60;
+const PARKING_TICK = 16;
+const TURN_SPEED = 0.04;
+const ACCEL = 0.12;
+const FRICTION = 0.94;
+const MAX_SPEED = 2.5;
+const PARKING_LEVELS = 5;
+
+interface ParkingState {
+  x: number;
+  y: number;
+  angle: number;
+  vx: number;
+  vy: number;
+  speed: number;
+  steering: number; // -1 left, 0 straight, 1 right
+  throttle: number; // -1 reverse, 0 idle, 1 forward
+}
+
+interface ParkingSpot {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface ParkedCar {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function generateParkingLevel(level: number): { spot: ParkingSpot; parkedCars: ParkedCar[] } {
+  // Gap gets tighter as level increases
+  const gapSize = PARKED_CAR_H + 30 - level * 3;
+  const spotX = PARKING_W - 50;
+  const spotY = PARKING_H / 2 - gapSize / 2;
+
+  const parkedCars: ParkedCar[] = [];
+  // Car above the spot
+  parkedCars.push({ x: spotX - 1, y: spotY - PARKED_CAR_H - 4, w: PARKED_CAR_W, h: PARKED_CAR_H });
+  // Car below the spot
+  parkedCars.push({ x: spotX - 1, y: spotY + gapSize + 4, w: PARKED_CAR_W, h: PARKED_CAR_H });
+
+  // Add random cars on the left side for obstacles in later levels
+  if (level >= 2) {
+    parkedCars.push({ x: 30, y: 60, w: PARKED_CAR_W, h: PARKED_CAR_H });
+  }
+  if (level >= 3) {
+    parkedCars.push({ x: 30, y: PARKING_H - 120, w: PARKED_CAR_W, h: PARKED_CAR_H });
+  }
+  if (level >= 4) {
+    parkedCars.push({ x: 120, y: 140, w: PARKED_CAR_W, h: PARKED_CAR_H });
+  }
+
+  return {
+    spot: { x: spotX, y: spotY, w: PARKED_CAR_W + 4, h: gapSize },
+    parkedCars,
+  };
+}
+
+function getCarCorners(x: number, y: number, angle: number, w: number, h: number) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const hw = w / 2;
+  const hh = h / 2;
+  return [
+    { x: x + cos * (-hw) - sin * (-hh), y: y + sin * (-hw) + cos * (-hh) },
+    { x: x + cos * (hw) - sin * (-hh), y: y + sin * (hw) + cos * (-hh) },
+    { x: x + cos * (hw) - sin * (hh), y: y + sin * (hw) + cos * (hh) },
+    { x: x + cos * (-hw) - sin * (hh), y: y + sin * (-hw) + cos * (hh) },
+  ];
+}
+
+function rectContainsPoint(rx: number, ry: number, rw: number, rh: number, px: number, py: number) {
+  return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+}
+
+function checkCollision(car: ParkingState, obstacles: ParkedCar[]): boolean {
+  const corners = getCarCorners(car.x, car.y, car.angle, CAR_W, CAR_H);
+  // Check bounds
+  for (const c of corners) {
+    if (c.x < 0 || c.x > PARKING_W || c.y < 0 || c.y > PARKING_H) return true;
+  }
+  // Check obstacles
+  for (const obs of obstacles) {
+    for (const c of corners) {
+      if (rectContainsPoint(obs.x, obs.y, obs.w, obs.h, c.x, c.y)) return true;
+    }
+    // Also check obstacle corners against player car (SAT approximation)
+    const obsCorners = [
+      { x: obs.x, y: obs.y },
+      { x: obs.x + obs.w, y: obs.y },
+      { x: obs.x + obs.w, y: obs.y + obs.h },
+      { x: obs.x, y: obs.y + obs.h },
+    ];
+    // Transform obstacle corners into car's local space
+    const cos = Math.cos(-car.angle);
+    const sin = Math.sin(-car.angle);
+    for (const oc of obsCorners) {
+      const dx = oc.x - car.x;
+      const dy = oc.y - car.y;
+      const lx = cos * dx - sin * dy;
+      const ly = sin * dx + cos * dy;
+      if (Math.abs(lx) < CAR_W / 2 && Math.abs(ly) < CAR_H / 2) return true;
+    }
+  }
+  return false;
+}
+
+function checkParked(car: ParkingState, spot: ParkingSpot): boolean {
+  const corners = getCarCorners(car.x, car.y, car.angle, CAR_W, CAR_H);
+  // All corners must be inside the spot (with some tolerance)
+  const tolerance = 3;
+  for (const c of corners) {
+    if (
+      c.x < spot.x - tolerance ||
+      c.x > spot.x + spot.w + tolerance ||
+      c.y < spot.y - tolerance ||
+      c.y > spot.y + spot.h + tolerance
+    ) {
+      return false;
+    }
+  }
+  // Car must be roughly vertical (angle close to 0 or PI)
+  const normAngle = ((car.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const angleOk = normAngle < 0.3 || normAngle > Math.PI * 2 - 0.3 || (normAngle > Math.PI - 0.3 && normAngle < Math.PI + 0.3);
+  // Car must be nearly stopped
+  const stopped = Math.abs(car.speed) < 0.3;
+  return angleOk && stopped;
+}
+
+function useParking(onGameOver: (score: number) => void) {
+  const [level, setLevel] = useState(1);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState("");
+  const [parked, setParked] = useState(false);
+  const [car, setCar] = useState<ParkingState>({
+    x: 80, y: PARKING_H / 2, angle: 0, vx: 0, vy: 0, speed: 0, steering: 0, throttle: 0,
+  });
+  const [levelData, setLevelData] = useState(() => generateParkingLevel(1));
+  const [timeLeft, setTimeLeft] = useState(15);
+  const keysRef = useRef<Set<string>>(new Set());
+  const tickRef = useRef<number>(0);
+  const gameOverRef = useRef(false);
+  const parkedRef = useRef(false);
+
+  const reset = useCallback(() => {
+    setLevel(1);
+    setScore(0);
+    setGameOver(false);
+    setGameOverReason("");
+    setParked(false);
+    setTimeLeft(15);
+    gameOverRef.current = false;
+    parkedRef.current = false;
+    const ld = generateParkingLevel(1);
+    setLevelData(ld);
+    setCar({ x: 80, y: PARKING_H / 2, angle: 0, vx: 0, vy: 0, speed: 0, steering: 0, throttle: 0 });
+  }, []);
+
+  const nextLevel = useCallback((currentLevel: number, currentScore: number) => {
+    if (currentLevel >= PARKING_LEVELS) {
+      // All levels complete!
+      const finalScore = currentScore;
+      setGameOver(true);
+      setGameOverReason("All levels complete! 🎉");
+      gameOverRef.current = true;
+      onGameOver(finalScore);
+      return;
+    }
+    const nl = currentLevel + 1;
+    setLevel(nl);
+    setParked(false);
+    parkedRef.current = false;
+    setTimeLeft(Math.max(10, 16 - nl));
+    const ld = generateParkingLevel(nl);
+    setLevelData(ld);
+    setCar({ x: 80, y: PARKING_H / 2, angle: 0, vx: 0, vy: 0, speed: 0, steering: 0, throttle: 0 });
+  }, [onGameOver]);
+
+  // Keyboard controls
+  useEffect(() => {
+    const onDown = (e: KeyboardEvent) => { keysRef.current.add(e.key); };
+    const onUp = (e: KeyboardEvent) => { keysRef.current.delete(e.key); };
+    window.addEventListener("keydown", onDown);
+    window.addEventListener("keyup", onUp);
+    return () => {
+      window.removeEventListener("keydown", onDown);
+      window.removeEventListener("keyup", onUp);
+    };
+  }, []);
+
+  // Game loop
+  useEffect(() => {
+    if (gameOver) return;
+    const interval = setInterval(() => {
+      if (gameOverRef.current || parkedRef.current) return;
+
+      setCar((prev) => {
+        const keys = keysRef.current;
+        let steering = 0;
+        let throttle = 0;
+        if (keys.has("ArrowLeft") || keys.has("a")) steering = -1;
+        if (keys.has("ArrowRight") || keys.has("d")) steering = 1;
+        if (keys.has("ArrowUp") || keys.has("w")) throttle = 1;
+        if (keys.has("ArrowDown") || keys.has("s")) throttle = -1;
+
+        let speed = prev.speed;
+        if (throttle !== 0) {
+          speed += throttle * ACCEL;
+          speed = Math.max(-MAX_SPEED * 0.6, Math.min(MAX_SPEED, speed));
+        } else {
+          speed *= FRICTION;
+          if (Math.abs(speed) < 0.01) speed = 0;
+        }
+
+        let angle = prev.angle;
+        if (Math.abs(speed) > 0.05) {
+          angle += steering * TURN_SPEED * speed;
+        }
+
+        const vx = Math.sin(angle) * speed;
+        const vy = -Math.cos(angle) * speed;
+        const x = prev.x + vx;
+        const y = prev.y + vy;
+
+        return { x, y, angle, vx, vy, speed, steering, throttle };
+      });
+    }, PARKING_TICK);
+
+    return () => clearInterval(interval);
+  }, [gameOver]);
+
+  // Collision & parking check (separate from physics to avoid stale closures)
+  useEffect(() => {
+    if (gameOver) return;
+    const check = setInterval(() => {
+      if (gameOverRef.current || parkedRef.current) return;
+      setCar((currentCar) => {
+        if (checkCollision(currentCar, levelData.parkedCars)) {
+          setGameOver(true);
+          setGameOverReason("💥 Crash!");
+          gameOverRef.current = true;
+          setScore((s) => { onGameOver(s); return s; });
+        } else if (checkParked(currentCar, levelData.spot)) {
+          parkedRef.current = true;
+          setParked(true);
+          const bonus = Math.ceil(timeLeft * 10);
+          setScore((s) => {
+            const newScore = s + 100 + bonus;
+            setLevel((cl) => {
+              nextLevel(cl, newScore);
+              return cl;
+            });
+            return newScore;
+          });
+        }
+        return currentCar;
+      });
+    }, 50);
+    return () => clearInterval(check);
+  }, [gameOver, levelData, timeLeft, onGameOver, nextLevel]);
+
+  // Timer
+  useEffect(() => {
+    if (gameOver || parked) return;
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 0.1) {
+          setGameOver(true);
+          setGameOverReason("⏱️ Time's up!");
+          gameOverRef.current = true;
+          setScore((s) => { onGameOver(s); return s; });
+          return 0;
+        }
+        return Math.max(0, t - 0.1);
+      });
+    }, 100);
+    return () => clearInterval(timer);
+  }, [gameOver, parked, onGameOver]);
+
+  // Touch/button controls
+  const setSteer = useCallback((dir: number) => {
+    if (dir === -1) { keysRef.current.add("ArrowLeft"); keysRef.current.delete("ArrowRight"); }
+    else if (dir === 1) { keysRef.current.add("ArrowRight"); keysRef.current.delete("ArrowLeft"); }
+    else { keysRef.current.delete("ArrowLeft"); keysRef.current.delete("ArrowRight"); }
+  }, []);
+
+  const setThrottle = useCallback((dir: number) => {
+    if (dir === 1) { keysRef.current.add("ArrowUp"); keysRef.current.delete("ArrowDown"); }
+    else if (dir === -1) { keysRef.current.add("ArrowDown"); keysRef.current.delete("ArrowUp"); }
+    else { keysRef.current.delete("ArrowUp"); keysRef.current.delete("ArrowDown"); }
+  }, []);
+
+  return { car, level, score, gameOver, gameOverReason, parked, timeLeft, levelData, reset, setSteer, setThrottle };
+}
+
+function ParkingBoard({ game }: { game: ReturnType<typeof useParking> }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let animId: number;
+    const draw = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Clear
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fillRect(0, 0, PARKING_W, PARKING_H);
+
+      // Draw road markings
+      ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      ctx.setLineDash([10, 10]);
+      ctx.beginPath();
+      ctx.moveTo(PARKING_W / 2, 0);
+      ctx.lineTo(PARKING_W / 2, PARKING_H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw parking spot
+      const spot = game.levelData.spot;
+      ctx.strokeStyle = "#4ade80";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(spot.x, spot.y, spot.w, spot.h);
+      ctx.fillStyle = "rgba(74,222,128,0.08)";
+      ctx.fillRect(spot.x, spot.y, spot.w, spot.h);
+
+      // Draw parked cars (obstacles)
+      for (const obs of game.levelData.parkedCars) {
+        ctx.fillStyle = "#64748b";
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        // Windshield
+        ctx.fillStyle = "#334155";
+        ctx.fillRect(obs.x + 4, obs.y + 6, obs.w - 8, 10);
+      }
+
+      // Draw player car
+      const { x, y, angle } = game.car;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      // Car body
+      ctx.fillStyle = game.gameOver ? "#ef4444" : "#3b82f6";
+      ctx.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
+      // Windshield
+      ctx.fillStyle = "#1e3a5f";
+      ctx.fillRect(-CAR_W / 2 + 4, -CAR_H / 2 + 6, CAR_W - 8, 12);
+      // Tail lights
+      ctx.fillStyle = "#f87171";
+      ctx.fillRect(-CAR_W / 2 + 2, CAR_H / 2 - 6, 6, 4);
+      ctx.fillRect(CAR_W / 2 - 8, CAR_H / 2 - 6, 6, 4);
+      // Direction indicator (front)
+      ctx.fillStyle = "#fbbf24";
+      ctx.fillRect(-CAR_W / 2 + 2, -CAR_H / 2 + 2, 6, 3);
+      ctx.fillRect(CAR_W / 2 - 8, -CAR_H / 2 + 2, 6, 3);
+      ctx.restore();
+
+      // HUD - level and timer
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.font = "bold 14px system-ui";
+      ctx.fillText(`Level ${game.level}/${PARKING_LEVELS}`, 8, 20);
+      ctx.fillStyle = game.timeLeft < 3 ? "#ef4444" : "rgba(255,255,255,0.7)";
+      ctx.fillText(`⏱️ ${game.timeLeft.toFixed(1)}s`, 8, 40);
+
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [game.car, game.levelData, game.level, game.timeLeft, game.gameOver]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={PARKING_W}
+      height={PARKING_H}
+      className="w-full rounded-lg border border-white/[0.1]"
+      style={{ imageRendering: "crisp-edges" }}
+    />
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function Minigames() {
@@ -1632,6 +2029,7 @@ export default function Minigames() {
   const lingoGame = useLingo(handleGameOver);
   const triviaGame = useTriviaGame(handleGameOver);
   const chessGame = useChess(handleGameOver);
+  const parkingGame = useParking(handleGameOver);
   const [gameOverReady, setGameOverReady] = useState(false);
 
   const startGame = () => {
@@ -1642,6 +2040,7 @@ export default function Minigames() {
     else if (selectedGame?.id === "lingo") lingoGame.reset();
     else if (selectedGame?.id === "trivia") triviaGame.reset();
     else if (selectedGame?.id === "chess") chessGame.reset();
+    else if (selectedGame?.id === "parking") parkingGame.reset();
   };
 
   // Delay-enable buttons after game over to prevent accidental taps
@@ -1650,7 +2049,8 @@ export default function Minigames() {
     (selectedGame?.id === "flappy" && flappyGame.gameOver) ||
     (selectedGame?.id === "lingo" && lingoGame.gameOver) ||
     (selectedGame?.id === "trivia" && triviaGame.gameOver) ||
-    (selectedGame?.id === "chess" && chessGame.gameOver);
+    (selectedGame?.id === "chess" && chessGame.gameOver) ||
+    (selectedGame?.id === "parking" && parkingGame.gameOver);
   useEffect(() => {
     if (!isGameOverNow) {
       setGameOverReady(false);
@@ -1888,7 +2288,9 @@ export default function Minigames() {
                         ? lingoGame.gameOver
                       : selectedGame.id === "trivia"
                         ? triviaGame.gameOver
-                        : chessGame.gameOver)
+                        : selectedGame.id === "parking"
+                          ? parkingGame.gameOver
+                          : chessGame.gameOver)
                     ? "Play Again"
                     : "Start Game"}
                 </Button>
@@ -1911,7 +2313,9 @@ export default function Minigames() {
                           ? lingoGame.score
                         : selectedGame.id === "trivia"
                           ? triviaGame.score
-                          : chessGame.score;
+                          : selectedGame.id === "parking"
+                            ? parkingGame.score
+                            : chessGame.score;
                   const isGameOver =
                     selectedGame.id === "snake"
                       ? snakeGame.gameOver
@@ -1921,7 +2325,9 @@ export default function Minigames() {
                           ? lingoGame.gameOver
                         : selectedGame.id === "trivia"
                           ? triviaGame.gameOver
-                          : chessGame.gameOver;
+                          : selectedGame.id === "parking"
+                            ? parkingGame.gameOver
+                            : chessGame.gameOver;
 
                   return (
                     <>
@@ -1978,12 +2384,17 @@ export default function Minigames() {
                           onSelect={chessGame.selectSquare}
                         />
                       )}
+                      {selectedGame.id === "parking" && (
+                        <ParkingBoard game={parkingGame} />
+                      )}
 
                       {isGameOver && (
                         <div className="mt-3 text-center">
                           <p className="text-sm text-white/70 mb-2">
                             {selectedGame.id === "chess" && chessGame.gameOverReason ? (
                               <>{chessGame.gameOverReason} Score:{" "}</>
+                            ) : selectedGame.id === "parking" && parkingGame.gameOverReason ? (
+                              <>{parkingGame.gameOverReason} Score:{" "}</>
                             ) : (
                               <>Game Over! Score:{" "}</>
                             )}
@@ -2057,6 +2468,58 @@ export default function Minigames() {
                           >
                             Tap to flap
                           </button>
+                        </div>
+                      )}
+
+                      {/* Parking controls */}
+                      {selectedGame.id === "parking" && !parkingGame.gameOver && (
+                        <div className="mt-4 flex justify-center">
+                          <div className="grid grid-cols-3 gap-2 w-52 select-none">
+                            <div />
+                            <button
+                              onPointerDown={() => parkingGame.setThrottle(1)}
+                              onPointerUp={() => parkingGame.setThrottle(0)}
+                              onPointerLeave={() => parkingGame.setThrottle(0)}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowUp size={28} />
+                            </button>
+                            <div />
+                            <button
+                              onPointerDown={() => parkingGame.setSteer(-1)}
+                              onPointerUp={() => parkingGame.setSteer(0)}
+                              onPointerLeave={() => parkingGame.setSteer(0)}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowLeft size={28} />
+                            </button>
+                            <button
+                              onPointerDown={() => parkingGame.setThrottle(-1)}
+                              onPointerUp={() => parkingGame.setThrottle(0)}
+                              onPointerLeave={() => parkingGame.setThrottle(0)}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-xs text-white/60 touch-none"
+                            >
+                              R
+                            </button>
+                            <button
+                              onPointerDown={() => parkingGame.setSteer(1)}
+                              onPointerUp={() => parkingGame.setSteer(0)}
+                              onPointerLeave={() => parkingGame.setSteer(0)}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowRight size={28} />
+                            </button>
+                            <div />
+                            <button
+                              onPointerDown={() => parkingGame.setThrottle(-1)}
+                              onPointerUp={() => parkingGame.setThrottle(0)}
+                              onPointerLeave={() => parkingGame.setThrottle(0)}
+                              className="h-14 rounded-2xl bg-white/[0.12] active:bg-white/[0.25] flex items-center justify-center text-white/80 touch-none"
+                            >
+                              <ArrowDown size={28} />
+                            </button>
+                            <div />
+                          </div>
                         </div>
                       )}
                     </>
