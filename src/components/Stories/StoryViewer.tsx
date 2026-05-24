@@ -3,30 +3,42 @@ import { X } from "lucide-react";
 import type { StoryGroup } from "./StoriesBar";
 
 interface Props {
-  group: StoryGroup;
+  groups: StoryGroup[];
+  initialGroupIndex: number;
   onClose: () => void;
 }
 
-export default function StoryViewer({ group, onClose }: Props) {
+export default function StoryViewer({ groups, initialGroupIndex, onClose }: Props) {
+  const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const story = group.stories[index];
+  const group = groups[groupIndex];
+  const story = group?.stories[index];
 
   const goNext = useCallback(() => {
+    if (!group) return;
     if (index < group.stories.length - 1) {
       setIndex((i) => i + 1);
+      setProgress(0);
+    } else if (groupIndex < groups.length - 1) {
+      setGroupIndex((g) => g + 1);
+      setIndex(0);
       setProgress(0);
     } else {
       onClose();
     }
-  }, [index, group.stories.length, onClose]);
+  }, [index, group?.stories.length, groupIndex, groups.length, onClose]);
 
   const goPrev = useCallback(() => {
     if (index > 0) {
       setIndex((i) => i - 1);
       setProgress(0);
+    } else if (groupIndex > 0) {
+      setGroupIndex((g) => g - 1);
+      setIndex(groups[groupIndex - 1].stories.length - 1);
+      setProgress(0);
     }
-  }, [index]);
+  }, [index, groupIndex, groups]);
 
   // Auto-advance timer (5 seconds per story)
   useEffect(() => {

@@ -14,7 +14,7 @@ export default function Snaps() {
   const { data, loading, mutate } = useCachedFetch<{
     story_groups: StoryGroup[];
   }>("/api/stories");
-  const [viewingGroup, setViewingGroup] = useState<StoryGroup | null>(null);
+  const [viewingGroupIndex, setViewingGroupIndex] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   const groups = data?.story_groups ?? [];
@@ -83,13 +83,13 @@ export default function Snaps() {
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {sorted.map((group) => {
+          {sorted.map((group, idx) => {
             const latestStory = group.stories[0];
             const imageUrl = `/api/stories/image/${latestStory?.image_key}`;
             return (
               <button
                 key={group.user_id}
-                onClick={() => setViewingGroup(group)}
+                onClick={() => setViewingGroupIndex(idx)}
                 className="relative aspect-[3/4] rounded-2xl overflow-hidden group"
               >
                 {/* Story image */}
@@ -133,10 +133,11 @@ export default function Snaps() {
         </div>
       )}
 
-      {viewingGroup && (
+      {viewingGroupIndex !== null && (
         <StoryViewer
-          group={viewingGroup}
-          onClose={() => setViewingGroup(null)}
+          groups={sorted}
+          initialGroupIndex={viewingGroupIndex}
+          onClose={() => setViewingGroupIndex(null)}
         />
       )}
 
