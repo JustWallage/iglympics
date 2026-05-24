@@ -16,6 +16,7 @@ const PUBLIC_GET_PREFIXES = [
   "/api/minigame-scores",
   "/api/stories",
   "/api/chess",
+  "/api/racing",
   "/api/bets",
 ];
 
@@ -33,6 +34,10 @@ export const onRequest: PagesFunction<Env>[] = [
     }
 
     if (url.pathname === "/api/chess/game/ws") {
+      return context.next();
+    }
+
+    if (url.pathname === "/api/racing/game/ws") {
       return context.next();
     }
 
