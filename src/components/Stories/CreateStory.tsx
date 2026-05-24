@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Camera, ImagePlus } from "lucide-react";
+import { X, Send, Camera, ImagePlus, Video } from "lucide-react";
 
 interface Props {
   onClose: () => void;
@@ -10,6 +10,7 @@ export default function CreateStory({ onClose, onCreated }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
+  const isVideo = file?.type.startsWith("video/") ?? false;
 
   // Revoke object URL on unmount to prevent memory leaks
   useEffect(() => {
@@ -21,13 +22,17 @@ export default function CreateStory({ onClose, onCreated }: Props) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
 
-    if (selected.size > 5 * 1024 * 1024) {
-      setError("Image must be under 5 MB");
+    const selectedIsVideo = selected.type.startsWith("video/");
+    const maxSize = selectedIsVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    const label = selectedIsVideo ? "50 MB" : "5 MB";
+    if (selected.size > maxSize) {
+      setError(`${selectedIsVideo ? "Video" : "Image"} must be under ${label}`);
       return;
     }
 
@@ -69,15 +74,22 @@ export default function CreateStory({ onClose, onCreated }: Props) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
         className="hidden"
         onChange={handleFileChange}
       />
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
         capture="environment"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/mp4,video/webm,video/quicktime"
         className="hidden"
         onChange={handleFileChange}
       />
@@ -105,12 +117,21 @@ export default function CreateStory({ onClose, onCreated }: Props) {
       <div className="flex-1 flex items-center justify-center mx-4 mb-4 relative">
         {preview ? (
           <div className="relative w-full h-full rounded-2xl overflow-hidden bg-black">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full h-full object-contain"
-            />
-            {/* Change photo button */}
+            {isVideo ? (
+              <video
+                src={preview}
+                className="w-full h-full object-contain"
+                controls
+                playsInline
+              />
+            ) : (
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-full object-contain"
+              />
+            )}
+            {/* Change media button */}
             <button
               onClick={() => fileInputRef.current?.click()}
               className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/50 text-white/80 text-xs font-medium hover:bg-black/70 transition-colors"
@@ -123,10 +144,10 @@ export default function CreateStory({ onClose, onCreated }: Props) {
             <div className="text-center">
               <ImagePlus size={48} className="mx-auto text-white/15 mb-3" />
               <p className="text-sm text-white/40">
-                Take a photo or choose from gallery
+                Take a photo/video or choose from gallery
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap justify-center">
               <button
                 onClick={() => cameraInputRef.current?.click()}
                 className="flex items-center gap-2 px-5 py-3 rounded-xl bg-accent/15 text-accent-light text-sm font-medium hover:bg-accent/25 transition-colors"
@@ -139,14 +160,21 @@ export default function CreateStory({ onClose, onCreated }: Props) {
                 className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/[0.06] text-white/70 text-sm font-medium hover:bg-white/10 transition-colors"
               >
                 <ImagePlus size={18} />
-                Gallery
+                Photo
+              </button>
+              <button
+                onClick={() => videoInputRef.current?.click()}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/[0.06] text-white/70 text-sm font-medium hover:bg-white/10 transition-colors"
+              >
+                <Video size={18} />
+                Video
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Caption input (only shown when image selected) */}
+      {/* Caption input (only shown when media selected) */}
       {preview && (
         <div className="px-4 pb-6">
           <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl px-4 py-3">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import type { StoryGroup } from "./StoriesBar";
 
@@ -12,8 +12,10 @@ export default function StoryViewer({ groups, initialGroupIndex, onClose }: Prop
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const group = groups[groupIndex];
   const story = group?.stories[index];
+  const isVideo = story?.media_type === "video";
 
   const goNext = useCallback(() => {
     if (!group) return;
@@ -40,9 +42,10 @@ export default function StoryViewer({ groups, initialGroupIndex, onClose }: Prop
     }
   }, [index, groupIndex, groups]);
 
-  // Auto-advance timer (5 seconds per story)
+  // Auto-advance for images (5 seconds); for videos, driven by the video element
   useEffect(() => {
     setProgress(0);
+    if (isVideo) return;
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -53,7 +56,28 @@ export default function StoryViewer({ groups, initialGroupIndex, onClose }: Prop
       });
     }, 100);
     return () => clearInterval(interval);
-  }, [index, goNext]);
+  }, [index, isVideo, goNext]);
+
+  // Progress tracking for video stories
+  useEffect(() => {
+    if (!isVideo) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const onTimeUpdate = () => {
+      if (video.duration) {
+        setProgress((video.currentTime / video.duration) * 100);
+      }
+    };
+    const onEnded = () => goNext();
+
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("ended", onEnded);
+    return () => {
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("ended", onEnded);
+    };
+  }, [isVideo, index, goNext]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -68,7 +92,7 @@ export default function StoryViewer({ groups, initialGroupIndex, onClose }: Prop
 
   if (!story) return null;
 
-  const imageUrl = `/api/stories/image/${story.image_key}`;
+  const mediaUrl = `/api/stories/image/${story.image_key}`;
   const timeAgo = getTimeAgo(story.created_at);
 
   return (
@@ -114,12 +138,23 @@ export default function StoryViewer({ groups, initialGroupIndex, onClose }: Prop
         </button>
       </div>
 
-      {/* Story image */}
-      <img
-        src={imageUrl}
-        alt="Story"
-        className="w-full h-full object-contain"
-      />
+      {/* Story media */}
+      {isVideo ? (
+        <video
+          ref={videoRef}
+          key={story.id}
+          src={mediaUrl}
+          className="w-full h-full object-contain"
+          autoPlay
+          playsInline
+        />
+      ) : (
+        <img
+          src={mediaUrl}
+          alt="Story"
+          className="w-full h-full object-contain"
+        />
+      )}
 
       {/* Caption overlay */}
       {story.caption && (

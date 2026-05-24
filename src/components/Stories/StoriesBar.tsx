@@ -9,6 +9,7 @@ import CreateStory from "./CreateStory";
 interface Story {
   id: number;
   image_key: string;
+  media_type: "image" | "video";
   caption: string | null;
   created_at: string;
   expires_at: string;
@@ -77,13 +78,32 @@ export default function StoriesBar() {
               onClick={() => setViewingGroup(group)}
               className="flex flex-col items-center gap-1.5 shrink-0"
             >
-              <div className="h-14 w-14 rounded-full ring-2 ring-accent-light overflow-hidden bg-white/[0.08]">
+              <div className="relative h-14 w-14 rounded-full ring-2 ring-accent-light overflow-hidden bg-white/[0.08]">
                 {group.stories[0]?.image_key ? (
-                  <img
-                    src={thumbUrl}
-                    alt={group.user_name}
-                    className="h-full w-full object-cover"
-                  />
+                  group.stories[0].media_type === "video" ? (
+                    <>
+                      <video
+                        src={thumbUrl}
+                        className="h-full w-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-black/50 flex items-center justify-center">
+                          <svg width="8" height="8" viewBox="0 0 8 8" fill="white">
+                            <polygon points="1,0 7,4 1,8" />
+                          </svg>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <img
+                      src={thumbUrl}
+                      alt={group.user_name}
+                      className="h-full w-full object-cover"
+                    />
+                  )
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-lg font-bold text-white/70">
                     {initial}
