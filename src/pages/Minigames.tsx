@@ -2188,28 +2188,42 @@ function MazeBoard({ game }: { game: ReturnType<typeof useMaze> }) {
         const cos = Math.cos(rayAngle);
         const sin = Math.sin(rayAngle);
 
-        // DDA raycasting
-        let dist = 0;
-        const step = 0.02;
-        let hitX = player.x;
-        let hitY = player.y;
-        let hit = false;
+        // DDA algorithm for efficient raycasting
+        let mapX = Math.floor(player.x);
+        let mapY = Math.floor(player.y);
+        const deltaDistX = Math.abs(1 / cos);
+        const deltaDistY = Math.abs(1 / sin);
+        const stepX = cos < 0 ? -1 : 1;
+        const stepY = sin < 0 ? -1 : 1;
+        let sideDistX = cos < 0
+          ? (player.x - mapX) * deltaDistX
+          : (mapX + 1 - player.x) * deltaDistX;
+        let sideDistY = sin < 0
+          ? (player.y - mapY) * deltaDistY
+          : (mapY + 1 - player.y) * deltaDistY;
 
-        while (dist < 20) {
-          hitX = player.x + cos * dist;
-          hitY = player.y + sin * dist;
-          const mapX = Math.floor(hitX);
-          const mapY = Math.floor(hitY);
+        let hit = false;
+        let side = 0; // 0 = vertical wall hit, 1 = horizontal wall hit
+        let dist = 0;
+
+        while (!hit && dist < 20) {
+          if (sideDistX < sideDistY) {
+            sideDistX += deltaDistX;
+            mapX += stepX;
+            side = 0;
+          } else {
+            sideDistY += deltaDistY;
+            mapY += stepY;
+            side = 1;
+          }
 
           if (mapX < 0 || mapX >= MAZE_SIZE || mapY < 0 || mapY >= MAZE_SIZE) {
             hit = true;
-            break;
-          }
-          if (grid[mapY][mapX] === 1) {
+            dist = side === 0 ? sideDistX - deltaDistX : sideDistY - deltaDistY;
+          } else if (grid[mapY][mapX] === 1) {
             hit = true;
-            break;
+            dist = side === 0 ? sideDistX - deltaDistX : sideDistY - deltaDistY;
           }
-          dist += step;
         }
 
         if (!hit) continue;
@@ -2218,15 +2232,11 @@ function MazeBoard({ game }: { game: ReturnType<typeof useMaze> }) {
         const correctedDist = dist * Math.cos(rayAngle - player.angle);
         const wallHeight = Math.min(h, h / correctedDist);
 
-        // Color based on distance
+        // Color based on distance and wall side
         const brightness = Math.max(0, 1 - correctedDist / 8);
-        // Determine wall side for texture-like effect
-        const fractX = hitX - Math.floor(hitX);
-        const fractY = hitY - Math.floor(hitY);
-        const isVertical = fractX < 0.02 || fractX > 0.98;
 
         let r: number, g: number, b: number;
-        if (isVertical) {
+        if (side === 0) {
           r = Math.floor(80 * brightness);
           g = Math.floor(120 * brightness);
           b = Math.floor(200 * brightness);
@@ -2236,11 +2246,8 @@ function MazeBoard({ game }: { game: ReturnType<typeof useMaze> }) {
           b = Math.floor(160 * brightness);
         }
 
-        // Check if this is the end cell
-        const mapX = Math.floor(hitX);
-        const mapY = Math.floor(hitY);
-        const isEnd = (mapX === game.mazeData.endX || mapX === game.mazeData.endX + 1) &&
-                      (mapY === game.mazeData.endY || mapY === game.mazeData.endY + 1);
+        // Check if this is the end cell (green walls near goal)
+        const isEnd = mapX === game.mazeData.endX && mapY === game.mazeData.endY;
         if (isEnd) {
           r = Math.floor(80 * brightness);
           g = Math.floor(200 * brightness);
@@ -2878,6 +2885,7 @@ export default function Minigames() {
                           <div className="grid grid-cols-3 gap-2 w-52 select-none">
                             <div />
                             <button
+                              aria-label="Move forward"
                               onPointerDown={mazeGame.moveForward}
                               onPointerUp={mazeGame.stopForward}
                               onPointerLeave={mazeGame.stopForward}
@@ -2887,6 +2895,7 @@ export default function Minigames() {
                             </button>
                             <div />
                             <button
+                              aria-label="Turn left"
                               onPointerDown={mazeGame.turnLeft}
                               onPointerUp={mazeGame.stopLeft}
                               onPointerLeave={mazeGame.stopLeft}
@@ -2896,6 +2905,7 @@ export default function Minigames() {
                             </button>
                             <div className="h-14 rounded-2xl bg-white/[0.05]" role="presentation" aria-hidden="true" />
                             <button
+                              aria-label="Turn right"
                               onPointerDown={mazeGame.turnRight}
                               onPointerUp={mazeGame.stopRight}
                               onPointerLeave={mazeGame.stopRight}
@@ -2905,6 +2915,7 @@ export default function Minigames() {
                             </button>
                             <div />
                             <button
+                              aria-label="Move backward"
                               onPointerDown={mazeGame.moveBackward}
                               onPointerUp={mazeGame.stopBackward}
                               onPointerLeave={mazeGame.stopBackward}
