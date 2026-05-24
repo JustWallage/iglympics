@@ -1995,52 +1995,67 @@ function ParkingBoard({ game }: { game: ReturnType<typeof useParking> }) {
 
 const MAZE_W = 320;
 const MAZE_H = 240;
-const MAZE_SIZE = 15; // grid cells
+const MAZE_SIZE = 13; // grid cells (odd number for maze gen)
 const MAZE_FOV = Math.PI / 3;
 const MAZE_NUM_RAYS = MAZE_W;
 const MAZE_MOVE_SPEED = 0.06;
 const MAZE_ROT_SPEED = 0.05;
+const MAZE_WALL_HEIGHT = 0.6; // wall height factor (< 1 makes corridors feel taller/wider)
 
-function generateMaze(size: number): { grid: number[][]; startX: number; startY: number; endX: number; endY: number } {
+function generateMaze(size: number): { grid: number[][]; startX: number; startY: number; endX: number; endY: number; startAngle: number } {
   // Create grid filled with walls (1)
   const grid: number[][] = Array.from({ length: size }, () => Array(size).fill(1));
 
-  // Recursive backtracker maze generation
+  // Recursive backtracker maze generation using iterative stack to avoid deep recursion
   const visited: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false));
 
-  const carve = (cx: number, cy: number) => {
-    visited[cy][cx] = true;
-    grid[cy][cx] = 0;
+  const stack: [number, number][] = [[1, 1]];
+  visited[1][1] = true;
+  grid[1][1] = 0;
 
+  while (stack.length > 0) {
+    const [cx, cy] = stack[stack.length - 1];
     const dirs = [
       [0, -2], [0, 2], [-2, 0], [2, 0],
     ].sort(() => Math.random() - 0.5);
 
+    let carved = false;
     for (const [dx, dy] of dirs) {
       const nx = cx + dx;
       const ny = cy + dy;
       if (nx >= 0 && nx < size && ny >= 0 && ny < size && !visited[ny][nx]) {
-        // Carve the wall between
+        // Carve the destination cell and the wall between
+        visited[ny][nx] = true;
+        grid[ny][nx] = 0;
         grid[cy + dy / 2][cx + dx / 2] = 0;
-        carve(nx, ny);
+        stack.push([nx, ny]);
+        carved = true;
+        break;
       }
     }
-  };
-
-  // Start at (1,1)
-  carve(1, 1);
+    if (!carved) {
+      stack.pop();
+    }
+  }
 
   const startX = 1;
   const startY = 1;
   // End at bottom-right open cell
-  let endX = size - 2;
-  let endY = size - 2;
+  const endX = size - 2;
+  const endY = size - 2;
   // Ensure end is open
   grid[endY][endX] = 0;
   // Also ensure the cell before it is open for accessibility
   if (endX - 1 >= 0) grid[endY][endX - 1] = 0;
 
-  return { grid, startX, startY, endX, endY };
+  // Determine initial angle: face toward the first open adjacent corridor
+  let startAngle = 0;
+  if (grid[startY][startX + 1] === 0) startAngle = 0;           // right
+  else if (grid[startY + 1][startX] === 0) startAngle = Math.PI / 2; // down
+  else if (grid[startY][startX - 1] === 0) startAngle = Math.PI;     // left
+  else if (grid[startY - 1]?.[startX] === 0) startAngle = -Math.PI / 2; // up
+
+  return { grid, startX, startY, endX, endY, startAngle };
 }
 
 function useMaze(onGameOver: (score: number) => void) {
@@ -2050,7 +2065,7 @@ function useMaze(onGameOver: (score: number) => void) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [won, setWon] = useState(false);
 
-  const playerRef = useRef({ x: 1.5, y: 1.5, angle: 0 });
+  const playerRef = useRef({ x: 1.5, y: 1.5, angle: mazeData.startAngle });
   const keysRef = useRef<Set<string>>(new Set());
   const gameOverRef = useRef(false);
   const startTimeRef = useRef(0);
@@ -2063,7 +2078,7 @@ function useMaze(onGameOver: (score: number) => void) {
     setWon(false);
     setTimeElapsed(0);
     gameOverRef.current = false;
-    playerRef.current = { x: maze.startX + 0.5, y: maze.startY + 0.5, angle: 0 };
+    playerRef.current = { x: maze.startX + 0.5, y: maze.startY + 0.5, angle: maze.startAngle };
     startTimeRef.current = performance.now();
   }, []);
 
@@ -2230,7 +2245,7 @@ function MazeBoard({ game }: { game: ReturnType<typeof useMaze> }) {
 
         // Fix fisheye
         const correctedDist = dist * Math.cos(rayAngle - player.angle);
-        const wallHeight = Math.min(h, h / correctedDist);
+        const wallHeight = Math.min(h, (h * MAZE_WALL_HEIGHT) / correctedDist);
 
         // Color based on distance and wall side
         const brightness = Math.max(0, 1 - correctedDist / 8);
