@@ -13,6 +13,7 @@ import Chat from "./pages/Chat";
 import Schedule from "./pages/Schedule";
 import Minigames from "./pages/Minigames";
 import ChessPvP from "./pages/ChessPvP";
+import Racing from "./pages/Racing";
 import Snaps from "./pages/Snaps";
 import Bets from "./pages/Bets";
 import Chwazi from "./pages/Chwazi";
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="schedule" element={<Schedule />} />
               <Route path="games" element={<Minigames />} />
               <Route path="games/chess-pvp" element={<ChessPvP />} />
+              <Route path="games/racing" element={<Racing />} />
               <Route path="snaps" element={<Snaps />} />
               <Route path="bets" element={<Bets />} />
               <Route path="chwazi" element={<Chwazi />} />

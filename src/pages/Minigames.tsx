@@ -2568,6 +2568,23 @@ export default function Minigames() {
             </div>
           </Card>
         </Link>
+
+        {/* Racing link */}
+        <Link to="/games/racing">
+          <Card className="cursor-pointer active:bg-white/[0.06] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🏎️</span>
+              <div>
+                <div className="text-sm font-semibold text-white/90">
+                  Racing
+                </div>
+                <div className="text-xs text-white/40">
+                  Race against AI or other players
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Link>
       </div>
 
       {/* Game modal */}
