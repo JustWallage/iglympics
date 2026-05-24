@@ -25,3 +25,11 @@ new_sqlite_classes = ["ChessGameDO"]
 [[migrations]]
 tag = "v3"
 new_sqlite_classes = ["RacingGameDO"]
+
+[[durable_objects.bindings]]
+name = "MEXEN_GAME_DO"
+class_name = "MexenGameDO"
+
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["MexenGameDO"]
