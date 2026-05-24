@@ -54,10 +54,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const markets = await context.env.DB.prepare(
     `
     SELECT bm.id, bm.question, bm.description, bm.closes_at, bm.resolved_outcome, bm.resolved_at, bm.created_at,
+           bm.created_by,
            u.name as created_by_name,
            COALESCE(SUM(CASE WHEN bp.position = 'yes' THEN bp.amount ELSE 0 END), 0) as yes_total,
            COALESCE(SUM(CASE WHEN bp.position = 'no' THEN bp.amount ELSE 0 END), 0) as no_total,
-           COUNT(DISTINCT bp.user_id) as participant_count
+           COUNT(DISTINCT bp.user_id) as participant_count,
+           CASE WHEN bm.resolved_outcome IS NULL AND bm.closes_at > datetime('now') THEN 1 ELSE 0 END as is_open
     FROM bet_markets bm
     JOIN users u ON u.id = bm.created_by
     LEFT JOIN bet_positions bp ON bp.market_id = bm.id
@@ -74,10 +76,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     resolved_outcome: string | null;
     resolved_at: string | null;
     created_at: string;
+    created_by: number;
     created_by_name: string;
     yes_total: number;
     no_total: number;
     participant_count: number;
+    is_open: number;
   }>();
 
   // Get current user's positions if authenticated
@@ -100,14 +104,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const result = markets.results.map((m) => {
     const total = m.yes_total + m.no_total;
     const yesPercent = total > 0 ? Math.round((m.yes_total / total) * 100) : 50;
-    const isOpen =
-      !m.resolved_outcome && new Date(m.closes_at) > new Date();
 
     return {
       ...m,
+      is_open: m.is_open === 1,
       yes_percent: yesPercent,
       no_percent: 100 - yesPercent,
-      is_open: isOpen,
       my_position: userPositions.get(m.id) ?? null,
     };
   });

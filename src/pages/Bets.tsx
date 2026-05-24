@@ -16,6 +16,7 @@ interface Market {
   resolved_outcome: string | null;
   resolved_at: string | null;
   created_at: string;
+  created_by: number;
   created_by_name: string;
   yes_total: number;
   no_total: number;
@@ -45,6 +46,7 @@ export default function Bets() {
   const [closesAt, setClosesAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [betError, setBetError] = useState<string | null>(null);
 
   const handleCreate = async () => {
     if (!question || !closesAt) return;
@@ -76,6 +78,7 @@ export default function Bets() {
       openLoginModal();
       return;
     }
+    setBetError(null);
     const res = await fetch(`/api/bets/${marketId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -83,10 +86,14 @@ export default function Bets() {
     });
     if (res.ok) {
       fetchMarkets();
+    } else {
+      const err = await res.json();
+      setBetError((err as { error: string }).error || "Failed to place bet");
     }
   };
 
   const handleResolve = async (marketId: number, outcome: "yes" | "no") => {
+    setBetError(null);
     const res = await fetch(`/api/bets/${marketId}/resolve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -94,6 +101,9 @@ export default function Bets() {
     });
     if (res.ok) {
       fetchMarkets();
+    } else {
+      const err = await res.json();
+      setBetError((err as { error: string }).error || "Failed to resolve");
     }
   };
 
@@ -176,6 +186,11 @@ export default function Bets() {
         </Card>
       )}
 
+      {/* Error message */}
+      {betError && (
+        <p className="text-xs text-red-400 text-center">{betError}</p>
+      )}
+
       {/* Markets list */}
       {markets.length === 0 && (
         <Card>
@@ -214,7 +229,7 @@ function MarketCard({
 }) {
   const isResolved = !!market.resolved_outcome;
   const isClosed = !market.is_open && !isResolved;
-  const isCreator = currentUser?.name === market.created_by_name;
+  const isCreator = currentUser?.id === market.created_by;
 
   return (
     <Card className="space-y-3">
