@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
@@ -154,7 +155,9 @@ export default function Schedule() {
           {a.description && (
             <div
               className="text-sm text-white/60 leading-relaxed [&_a]:text-accent-light [&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: a.description }}
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(a.description),
+              }}
             />
           )}
 

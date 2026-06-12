@@ -40,7 +40,18 @@ export async function verifyPassword(
   storedSalt: string,
 ): Promise<boolean> {
   const { hash } = await hashPassword(password, storedSalt);
-  return hash === storedHash;
+  return timingSafeEqual(hash, storedHash);
+}
+
+// Constant-time comparison so response timing doesn't leak how many
+// leading characters of the hash matched.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 export async function createJWT(
