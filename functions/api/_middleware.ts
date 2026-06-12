@@ -14,7 +14,8 @@ const PUBLIC_GET_PREFIXES = [
   "/api/messages",
   "/api/activities",
   "/api/minigame-scores",
-  "/api/stories",
+  // NOTE: /api/stories is intentionally NOT public — story photos/videos
+  // must only be visible to logged-in users.
   "/api/chess",
   "/api/racing",
   "/api/bets",
